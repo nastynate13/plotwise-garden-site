@@ -14,7 +14,6 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="Reserve a place for a plant, choose how and when you intend to grow it, then record the actual planting date when it begins growing in your bed or container." />
-    <meta name="author" content="Nathan Morgan" />
     <meta name="generator" content="Ignite v0.6.9" />
     <title>Plan a planting and mark it as planted - Plotwise Garden</title>
     <link href="css/bootstrap.min.css" rel="stylesheet" />
@@ -35,39 +34,94 @@
     <meta name="apple-itunes-app" content="app-id=6764432303" />
     <meta name="description" content="Design your growing space, plan your season, and learn from everything you grow with Plotwise Garden for iPhone." /> 
     <script>
-/* Stored with the website in Kickstart. Native pages remain the content source.
- * Resolve links against Kickstart's <base> so previews and exports stay within
- * their own site, including when a ZIP is opened directly from disk.
+/* Saved in Kickstart Custom Head. Native article titles, summaries, and tags are
+ * the help library's source of truth. No generated pages need post-export edits.
+ * Topic tags control navigation; untagged tutorials remain under More tutorials.
  */
 document.addEventListener('DOMContentLoaded', () => {
   const siteRoot = new URL(document.baseURI);
-  const pageURL = new URL(window.location.href);
+  const pageURL = new URL(location.href);
   const pageKey = url => url.pathname.replace(/index\.html$/, '').replace(/\/$/, '');
+  const normalize = text => text.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const topics = [
+    {id: 'beds-containers', title: 'Beds & containers', description: 'Set up your growing spaces and make room for your plants.'},
+    {id: 'planning-planting', title: 'Planning & planting', description: 'Choose planting dates, manage groups, and plan what comes next.'},
+    {id: 'schedule-guidance', title: 'Schedule & guidance', description: 'Read your schedule and understand your garden’s guidance.'},
+    {id: 'journal-history', title: 'Journal & history', description: 'Record what happens and revisit your garden over time.'},
+    {id: 'catalogs-identification', title: 'Catalogs & photo identification', description: 'Explore plants and guides, and investigate what you’ve spotted.'},
+    {id: 'community', title: 'Community', description: 'Ask questions and share your growing experience.'},
+    {id: 'more', title: 'More tutorials', description: 'More ways to get to know Plotwise.'},
+  ];
   const resources = [
     {path: 'help/support/index.html', title: 'Support'},
+    {path: 'help/changelog/index.html', title: 'Changelog'},
     {path: 'help/community-guidelines/index.html', title: 'Community guidelines'},
     {path: 'privacy/index.html', title: 'Privacy policy'},
   ];
-  const isResource = url => resources.some(item => pageKey(url) === pageKey(new URL(item.path, siteRoot)));
-  const makeLink = (path, title, className = 'pw-link') => {
-    const link = document.createElement('a');
-    link.href = new URL(path, siteRoot).href;
-    link.textContent = title;
-    link.className = className;
-    return link;
+  const resourceFor = url => resources.find(r => pageKey(url) === pageKey(new URL(r.path, siteRoot)));
+  const element = (tag, className, text) => {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text) node.textContent = text;
+    return node;
+  };
+  const localURL = path => {
+    const url = new URL(path, siteRoot);
+    if (url.protocol === 'file:' && url.pathname.endsWith('/')) url.pathname += 'index.html';
+    return url;
+  };
+  const link = (path, title, className = 'pw-link') => {
+    const node = element('a', className, title);
+    node.href = localURL(path).href;
+    return node;
+  };
+  const topicPath = topic => `help/index.html?topic=${encodeURIComponent(topic.id)}`;
+  const readItems = doc => Array.from(doc.querySelectorAll('.blog-card')).flatMap(card => {
+    const title = card.querySelector('.blog-card-title');
+    if (!title) return [];
+    const url = localURL(title.getAttribute('href'));
+    const tags = Array.from(card.querySelectorAll('.blog-tag'), tag => tag.textContent.trim());
+    return [{title: title.textContent.trim(), url: url.href,
+      summary: card.querySelector('.blog-card-summary')?.textContent.trim() || '', tags,
+      topic: topics.find(t => tags.includes(t.title)) || topics.at(-1), resource: resourceFor(url)}];
+  });
+  const topicOfPage = () => {
+    const tags = Array.from(document.querySelectorAll('.blog-article-page > .blog-tag-list .blog-tag'), e => e.textContent.trim());
+    return topics.find(t => tags.includes(t.title)) || topics.at(-1);
+  };
+  const tutorialRow = item => {
+    const row = element('li');
+    const a = link(item.url, '', 'pw-tutorial-link');
+    a.append(element('span', 'pw-tutorial-title', item.title), element('span', 'pw-tutorial-summary', item.summary));
+    row.append(a);
+    return row;
+  };
+  const listOf = items => {
+    const list = element('ul', 'pw-tutorial-list');
+    items.forEach(item => list.append(tutorialRow(item)));
+    return list;
+  };
+  const breadcrumbs = (topic, current) => {
+    const nav = element('nav', 'pw-breadcrumbs');
+    nav.setAttribute('aria-label', 'Breadcrumb');
+    nav.append(link('help/index.html', 'Help'));
+    if (topic) nav.append(element('span', '', '/'), link(topicPath(topic), topic.title));
+    if (current) {
+      const label = element('span', 'pw-current', current);
+      label.setAttribute('aria-current', 'page');
+      nav.append(element('span', '', '/'), label);
+    }
+    return nav;
   };
 
-  // The native footer has a fixed "Blog" label and no custom-page link fields.
   const footer = document.querySelector('.footer-links');
   if (footer) {
-    for (const link of footer.querySelectorAll('a')) {
-      if (pageKey(new URL(link.href)) === pageKey(new URL('help/', siteRoot))) {
-        link.textContent = 'Help & Tutorials';
-      }
+    for (const a of footer.querySelectorAll('a')) {
+      if (pageKey(new URL(a.href)) === pageKey(localURL('help/'))) a.textContent = 'Help & Tutorials';
     }
     for (const item of resources) {
-      if (![...footer.querySelectorAll('a')].some(link => pageKey(new URL(link.href)) === pageKey(new URL(item.path, siteRoot)))) {
-        footer.append(makeLink(item.path, item.title, 'footer-privacy-link'));
+      if (![...footer.querySelectorAll('a')].some(a => pageKey(new URL(a.href)) === pageKey(localURL(item.path)))) {
+        footer.append(link(item.path, item.title, 'footer-privacy-link'));
       }
     }
   }
@@ -75,113 +129,172 @@ document.addEventListener('DOMContentLoaded', () => {
   const index = document.querySelector('.blog-index-page');
   if (index) {
     const header = index.querySelector('.blog-index-header');
-    const grid = index.querySelector('.blog-index-grid');
-    const cards = Array.from(index.querySelectorAll('.blog-card'));
-    // Keep practical support pages distinct from tutorial search. With JavaScript
-    // disabled, Kickstart still renders every page as an ordinary linked card.
-    const resourceCards = cards.filter(card => {
-      const link = card.querySelector('.blog-card-title');
-      return link && isResource(new URL(link.href));
-    });
-    if (grid && resourceCards.length) {
-      const section = document.createElement('section');
-      section.className = 'container pw-resources';
-      section.setAttribute('aria-labelledby', 'pw-resources-title');
-      const title = document.createElement('h2');
-      title.id = 'pw-resources-title';
-      title.textContent = 'Support & Community';
-      const row = document.createElement('div');
-      row.className = 'pw-resource-grid';
-      for (const card of resourceCards) row.append(card);
-      const policy = document.createElement('p');
-      policy.append(makeLink('privacy/index.html', 'Read the privacy policy'));
-      section.append(title, row, policy);
-      grid.after(section);
-    }
-    const tutorials = cards.filter(card => !resourceCards.includes(card));
-    if (header && grid && tutorials.length && !document.getElementById('pw-help-query')) {
-      const title = document.createElement('h2');
-      title.textContent = 'Tutorials';
-      title.className = 'container pw-tutorial-heading';
-      title.id = 'pw-tutorial-heading';
-      grid.setAttribute('aria-labelledby', title.id);
-      grid.before(title);
-      const search = document.createElement('div');
-      search.className = 'pw-search';
-      search.setAttribute('role', 'search');
-      search.setAttribute('aria-label', 'Find a tutorial');
-      search.innerHTML = '<label for="pw-help-query">Find a tutorial</label>' +
-        '<input id="pw-help-query" type="search" placeholder="Try planting dates or grouping" autocomplete="off" aria-describedby="pw-search-status">' +
-        '<p class="pw-search-status" id="pw-search-status" role="status" aria-live="polite"></p>';
-      header.append(search);
-      const empty = document.createElement('p');
-      empty.className = 'pw-empty container';
-      empty.hidden = true;
-      empty.append('No tutorials found. Try bed, planting, or grouping, or ', makeLink('help/support/index.html', 'contact support'), '.');
-      grid.after(empty);
-      const input = search.querySelector('input');
-      const status = search.querySelector('[role="status"]');
-      const normalize = value => value.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-      const items = tutorials.map(card => ({card, text: normalize(card.textContent)}));
-      input.addEventListener('input', () => {
-        const terms = normalize(input.value).trim().split(/\s+/).filter(Boolean);
-        let count = 0;
-        for (const item of items) {
-          item.card.hidden = !terms.every(term => item.text.includes(term));
-          if (!item.card.hidden) count++;
-        }
-        empty.hidden = count !== 0;
-        status.textContent = terms.length ? `${count} ${count === 1 ? 'tutorial' : 'tutorials'} found` : '';
+    const nativeGrid = index.querySelector('.blog-index-grid');
+    if (header && nativeGrid) {
+      const tutorials = readItems(document).filter(item => !item.resource);
+      const library = element('div', 'container pw-library');
+      const intro = element('section', 'pw-start');
+      intro.setAttribute('aria-labelledby', 'pw-start-heading');
+      const introTitle = element('h2', '', 'Start here'); introTitle.id = 'pw-start-heading';
+      intro.append(introTitle, element('p', 'pw-muted', 'Create a growing space, then make your first planting plan.'));
+      const firstSteps = ['create-your-first-bed', 'plan-and-plant'];
+      const starters = tutorials.filter(item => item.tags.includes('Start here')).sort((a, b) => {
+        const rank = item => {const n = firstSteps.findIndex(slug => pageKey(new URL(item.url)).endsWith('/' + slug)); return n < 0 ? 999 : n;};
+        return rank(a) - rank(b);
       });
+      const steps = element('ol', 'pw-start-list');
+      starters.forEach(item => { const row = element('li'); row.append(link(item.url, item.title, 'pw-start-link')); steps.append(row); });
+      intro.append(steps); intro.hidden = !starters.length;
+      const browse = element('section', 'pw-browse');
+      const browseTitle = element('h2', '', 'Browse by topic'); browseTitle.id = 'pw-browse-heading';
+      browse.setAttribute('aria-labelledby', browseTitle.id); browse.append(browseTitle);
+      const topicGrid = element('div', 'pw-topic-grid');
+      for (const topic of topics) {
+        const entries = tutorials.filter(item => item.topic.id === topic.id);
+        if (!entries.length) continue;
+        const section = element('section', 'pw-topic-card');
+        const h = element('h3'); h.append(link(topicPath(topic), topic.title));
+        section.append(h, element('p', 'pw-muted', topic.description), listOf(entries.slice(0, 4)));
+        if (entries.length > 4) section.append(link(topicPath(topic), `View all ${entries.length} tutorials`));
+        topicGrid.append(section);
+      }
+      browse.append(topicGrid);
+      const results = element('section', 'pw-results'); results.hidden = true;
+      const resultsTitle = element('h2', '', 'Search results'); resultsTitle.id = 'pw-results-heading';
+      results.setAttribute('aria-labelledby', resultsTitle.id);
+      const resultList = element('ul', 'pw-tutorial-list');
+      const empty = element('p', 'pw-empty'); empty.hidden = true;
+      empty.append('No tutorials found. Try a plant feature or task, or ', link('help/support/index.html', 'contact support'), '.');
+      results.append(resultsTitle, resultList, empty);
+      const appHelp = element('section', 'pw-app-help');
+      const appHelpTitle = element('h2', '', 'App help'); appHelpTitle.id = 'pw-app-help-heading';
+      appHelp.setAttribute('aria-labelledby', appHelpTitle.id);
+      const resourceLinks = element('div', 'pw-resource-links');
+      resources.forEach(item => resourceLinks.append(link(item.path, item.title)));
+      appHelp.append(appHelpTitle, resourceLinks);
+      library.append(intro, browse, results, appHelp);
+      nativeGrid.after(library);
+      nativeGrid.hidden = true; // Unenhanced native cards remain available without JavaScript.
+      const search = element('form', 'pw-search');
+      search.setAttribute('role', 'search'); search.setAttribute('aria-label', 'Search help');
+      const label = element('label', '', 'Search help'); label.htmlFor = 'pw-help-query';
+      const input = element('input'); input.id = 'pw-help-query'; input.type = 'search'; input.name = 'q';
+      input.placeholder = 'Try planting dates or grouping'; input.autocomplete = 'off';
+      const status = element('p', 'pw-search-status'); status.id = 'pw-search-status';
+      status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite');
+      input.setAttribute('aria-describedby', status.id);
+      search.append(label, input, status); header.append(search);
+      const params = pageURL.searchParams;
+      const selectedTopic = topics.find(topic => topic.id === params.get('topic'));
+      if (selectedTopic) {
+        const title = header.querySelector('h1');
+        title.before(breadcrumbs(null, selectedTopic.title)); title.textContent = selectedTopic.title;
+        const subtitle = header.querySelector('.blog-index-description');
+        if (subtitle) subtitle.textContent = selectedTopic.description;
+        header.append(link('help/index.html', '← All topics'));
+      }
+      const renderResults = () => {
+        const terms = normalize(input.value).trim().split(/\s+/).filter(Boolean);
+        const searching = terms.length > 0;
+        intro.hidden = searching || !!selectedTopic || !starters.length;
+        browse.hidden = searching || !!selectedTopic;
+        results.hidden = !searching && !selectedTopic;
+        // Searching always covers the library, including from a topic landing page.
+        const matches = tutorials.filter(item => searching
+          ? terms.every(term => normalize([item.title, item.summary, ...item.tags].join(' ')).includes(term))
+          : !selectedTopic || item.topic.id === selectedTopic.id);
+        resultsTitle.textContent = searching ? 'Search results' : 'Tutorials';
+        resultList.replaceChildren(...matches.map(tutorialRow));
+        empty.hidden = matches.length > 0;
+        status.textContent = searching ? `${matches.length} ${matches.length === 1 ? 'tutorial' : 'tutorials'} found` : '';
+      };
+      input.value = params.get('q') || '';
+      input.addEventListener('input', renderResults);
+      search.addEventListener('submit', event => {
+        event.preventDefault();
+        const url = new URL(pageURL); if (input.value.trim()) url.searchParams.set('q', input.value.trim()); else url.searchParams.delete('q');
+        history.replaceState(null, '', url); renderResults();
+      });
+      renderResults();
     }
   }
-  for (const link of document.querySelectorAll('.blog-card-link')) {
-    link.textContent = isResource(new URL(link.href)) ? 'Read more →' : 'Read tutorial →';
-  }
-  for (const link of document.querySelectorAll('.blog-back-link')) link.textContent = '← Help & tutorials';
 
+  for (const a of document.querySelectorAll('.blog-card-link')) a.textContent = resourceFor(new URL(a.href)) ? 'Read more →' : 'Read tutorial →';
+  for (const a of document.querySelectorAll('.blog-back-link')) a.textContent = '← Help & tutorials';
   const article = document.querySelector('.blog-article-body');
   if (article) {
-    const headings = Array.from(article.querySelectorAll('h2'));
+    const page = article.closest('.blog-article-page');
+    const isResource = resourceFor(pageURL);
+    const topic = isResource ? null : topicOfPage();
+    const title = page.querySelector('h1');
+    const back = page.querySelector('.blog-back-link');
+    const crumb = breadcrumbs(topic, title.textContent);
+    if (back) back.replaceWith(crumb); else title.before(crumb);
+    page.classList.add('pw-article-enhanced');
+    // Keep the article's native title/body and editable related links intact.
+    const layout = element('div', 'pw-article-layout');
+    const main = element('div', 'pw-article-main');
+    const sidebar = element('aside', 'pw-help-sidebar');
+    const navigation = element('details', 'pw-help-nav');
+    navigation.append(element('summary', '', 'Browse help'));
+    const nav = element('nav'); nav.setAttribute('aria-label', 'Help topics');
+    nav.append(link('help/index.html', 'All help & tutorials'));
+    resources.forEach(item => nav.append(link(item.path, item.title)));
+    navigation.append(nav); sidebar.append(navigation);
+    const articleNodes = [...page.children];
+    articleNodes.forEach(node => main.append(node));
+    layout.append(sidebar, main); page.append(layout);
+    const wide = matchMedia('(min-width: 1000px)');
+    const adaptNavigation = () => { navigation.open = wide.matches; };
+    adaptNavigation(); wide.addEventListener('change', adaptNavigation);
+    navigation.addEventListener('toggle', () => { if (wide.matches && !navigation.open) navigation.open = true; });
+    // One small same-origin request supplies current native article titles/tags.
+    // File previews cannot fetch; their Browse help link and related links still work.
+    if (location.protocol !== 'file:') {
+      fetch(localURL('help/index.html'), {signal: AbortSignal.timeout(8000)})
+        .then(response => {if (!response.ok) throw new Error('Help index unavailable'); return response.text();})
+        .then(html => {
+          const items = readItems(new DOMParser().parseFromString(html, 'text/html')).filter(item => !item.resource);
+          const fragment = document.createDocumentFragment();
+          fragment.append(link('help/index.html', 'All help & tutorials'));
+          topics.forEach(t => {
+            const entries = items.filter(item => item.topic.id === t.id);
+            if (!entries.length) return;
+            const group = element('details', 'pw-nav-topic'); group.open = topic?.id === t.id;
+            group.append(element('summary', '', t.title));
+            const list = element('ul');
+            entries.forEach(item => {const li = element('li'); const a = link(item.url, item.title);
+              if (pageKey(new URL(item.url)) === pageKey(pageURL)) a.setAttribute('aria-current', 'page');
+              li.append(a); list.append(li);});
+            group.append(list); fragment.append(group);
+          });
+          const appHelp = element('div', 'pw-nav-resources'); appHelp.append(element('p', '', 'App help'));
+          resources.forEach(item => {const a = link(item.path, item.title); if (pageKey(new URL(a.href)) === pageKey(pageURL)) a.setAttribute('aria-current', 'page'); appHelp.append(a);});
+          fragment.append(appHelp); nav.replaceChildren(fragment);
+        }).catch(() => { /* Preserve working links if this optional enhancement cannot load. */ });
+    }
+    const headings = [...article.querySelectorAll('h2')].filter(h => h.textContent !== 'Related tutorials');
     if (headings.length) {
-      const contents = document.createElement('details');
-      contents.className = 'pw-contents';
-      const summary = document.createElement('summary');
-      summary.textContent = 'On this page';
-      const list = document.createElement('ul');
+      const contents = element('details', 'pw-contents');
+      contents.append(element('summary', '', 'On this page'));
+      const list = element('ul');
       headings.forEach((heading, number) => {
         if (!heading.id) heading.id = `tutorial-section-${number + 1}`;
-        const row = document.createElement('li');
-        const link = document.createElement('a');
-        const target = new URL(pageURL);
-        target.hash = heading.id;
-        link.href = target.href;
-        link.textContent = heading.textContent;
-        row.append(link);
-        list.append(row);
+        const row = element('li'); const target = new URL(pageURL); target.hash = heading.id;
+        row.append(link(target.href, heading.textContent)); list.append(row);
       });
-      contents.append(summary, list);
-      article.before(contents);
+      contents.append(list); article.before(contents);
     }
   }
 
-  for (const link of document.querySelectorAll('a[href]')) {
-    const raw = link.getAttribute('href');
+  for (const a of document.querySelectorAll('a[href]')) {
+    const raw = a.getAttribute('href');
     if (!raw || /^(mailto:|tel:)/i.test(raw)) continue;
     let target;
-    try {
-      // Root-relative Custom HTML links escape a locally exported site. Native
-      // Kickstart links are base-relative; use that convention for both.
-      target = new URL(/^\/(?!\/)/.test(raw) ? raw.slice(1) : raw, siteRoot);
-    } catch { continue; }
-    const local = target.origin === siteRoot.origin && target.pathname.startsWith(siteRoot.pathname);
-    if (!local) continue;
-    // A browser's file URL loader doesn't provide a web server's index fallback.
-    if (target.protocol === 'file:' && target.pathname.endsWith('/')) target.pathname += 'index.html';
-    link.href = target.href;
-    if (pageKey(target) === pageKey(pageURL) && !target.hash && link.closest('.site-header, .footer-links')) {
-      link.setAttribute('aria-current', 'page');
-    }
+    try { target = localURL(/^\/(?!\/)/.test(raw) ? raw.slice(1) : raw); } catch { continue; }
+    if (target.origin !== siteRoot.origin || !target.pathname.startsWith(siteRoot.pathname)) continue;
+    a.href = target.href;
+    if (pageKey(target) === pageKey(pageURL) && !target.hash && !target.search && a.closest('.site-header, .footer-links')) a.setAttribute('aria-current', 'page');
   }
 });
 
@@ -214,10 +327,11 @@ document.addEventListener('DOMContentLoaded', () => {
             <h1 class="blog-post-title">Plan a planting and mark it as planted</h1>
             <div class="blog-post-meta">
               <p class="blog-post-meta-item">Nov 12, 2026</p>
-              <p class="blog-post-meta-item">Nathan Morgan</p>
               <p class="blog-post-meta-item">3 min read</p>
             </div>
             <div class="blog-tag-list">
+              <span class="blog-tag">Planning &amp; planting</span>
+              <span class="blog-tag">Start here</span>
               <span class="blog-tag">Planting dates</span>
               <span class="blog-tag">Seeds</span>
               <span class="blog-tag">Transplants</span>
@@ -260,7 +374,11 @@ document.addEventListener('DOMContentLoaded', () => {
               <p>Yes. Its space stays reserved in the plan. Add the method and date when you’re ready for timing guidance.</p>
               <h3>Does reaching the planned date mark it as planted?</h3>
               <p>No. Use Plant to confirm what happened in your garden.</p>
-              <p><strong>Next:</strong> <a href="help/group-plants/index.html">Manage several squares as one planting</a>.</p>
+              <h2>Related tutorials</h2>
+              <ul>
+                <li><a href="help/create-your-first-bed/index.html">Create your first bed</a></li>
+                <li><a href="help/group-plants/index.html">Manage several squares as one planting</a></li>
+              </ul>
               <p><a href="help/index.html">All help &amp; tutorials</a> · <a href="help/support/index.html">Contact support</a></p>
             </div>
             <script>(() => {
@@ -285,7 +403,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <a href="help/" class="footer-privacy-link">Blog</a>
             <a href="privacy/" class="footer-privacy-link">Privacy Policy</a>
           </div>
-          <p>© 2026 Nathan Morgan. Plotwise Garden.</p>
+          <p>© 2026 Plotwise Garden.</p>
           <a href="https://www.kickstart.tools" class="footer-kickstart-link">Built with Kickstart</a>
         </div>
       </div>
