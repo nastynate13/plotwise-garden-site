@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en" data-light-theme="light" data-dark-theme="dark">
+  <head>
+    <base href="../../" />
+    <meta property="og:site_name" content="Plotwise Garden" />
+    <meta property="og:title" content="Manage several squares as one planting" />
+    <meta name="twitter:title" content="Manage several squares as one planting" />
+    <meta property="og:description" content="Manage several squares of the same plant as one planting, with a shared plan, planting date, removal, and succession plan." />
+    <meta name="twitter:description" content="Manage several squares of the same plant as one planting, with a shared plan, planting date, removal, and succession plan." />
+    <meta property="og:url" content="https://plotwisegarden.com/help/group-plants" />
+    <meta name="twitter:domain" content="plotwisegarden.com" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:dnt" content="on" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Manage several squares of the same plant as one planting, with a shared plan, planting date, removal, and succession plan." />
+    <meta name="author" content="Nathan Morgan" />
+    <meta name="generator" content="Ignite v0.6.9" />
+    <title>Manage several squares as one planting - Plotwise Garden</title>
+    <link href="css/bootstrap.min.css" rel="stylesheet" />
+    <link href="css/bootstrap-icons.min.css" rel="stylesheet" />
+    <link href="css/ignite-core.min.css" rel="stylesheet" />
+    <link href="https://plotwisegarden.com/help/group-plants" rel="canonical" />
+    <link href="images/favicon.png" rel="icon" />
+    <link href="css/styles.css" rel="stylesheet" />
+    <style>
+:root {
+    --primary-color: #46624b;
+    --primary-rgb: 70, 98, 75;
+    --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    color-scheme: light dark;
+}
+</style>
+    <link href="css/custom.css" rel="stylesheet" />
+    <meta name="apple-itunes-app" content="app-id=6764432303" />
+    <meta name="description" content="Design your growing space, plan your season, and learn from everything you grow with Plotwise Garden for iPhone." /> 
+    <script>
+/* Stored with the website in Kickstart. Native pages remain the content source.
+ * Resolve links against Kickstart's <base> so previews and exports stay within
+ * their own site, including when a ZIP is opened directly from disk.
+ */
+document.addEventListener('DOMContentLoaded', () => {
+  const siteRoot = new URL(document.baseURI);
+  const pageURL = new URL(window.location.href);
+  const pageKey = url => url.pathname.replace(/index\.html$/, '').replace(/\/$/, '');
+  const resources = [
+    {path: 'help/support/index.html', title: 'Support'},
+    {path: 'help/community-guidelines/index.html', title: 'Community guidelines'},
+    {path: 'privacy/index.html', title: 'Privacy policy'},
+  ];
+  const isResource = url => resources.some(item => pageKey(url) === pageKey(new URL(item.path, siteRoot)));
+  const makeLink = (path, title, className = 'pw-link') => {
+    const link = document.createElement('a');
+    link.href = new URL(path, siteRoot).href;
+    link.textContent = title;
+    link.className = className;
+    return link;
+  };
+
+  // The native footer has a fixed "Blog" label and no custom-page link fields.
+  const footer = document.querySelector('.footer-links');
+  if (footer) {
+    for (const link of footer.querySelectorAll('a')) {
+      if (pageKey(new URL(link.href)) === pageKey(new URL('help/', siteRoot))) {
+        link.textContent = 'Help & Tutorials';
+      }
+    }
+    for (const item of resources) {
+      if (![...footer.querySelectorAll('a')].some(link => pageKey(new URL(link.href)) === pageKey(new URL(item.path, siteRoot)))) {
+        footer.append(makeLink(item.path, item.title, 'footer-privacy-link'));
+      }
+    }
+  }
+
+  const index = document.querySelector('.blog-index-page');
+  if (index) {
+    const header = index.querySelector('.blog-index-header');
+    const grid = index.querySelector('.blog-index-grid');
+    const cards = Array.from(index.querySelectorAll('.blog-card'));
+    // Keep practical support pages distinct from tutorial search. With JavaScript
+    // disabled, Kickstart still renders every page as an ordinary linked card.
+    const resourceCards = cards.filter(card => {
+      const link = card.querySelector('.blog-card-title');
+      return link && isResource(new URL(link.href));
+    });
+    if (grid && resourceCards.length) {
+      const section = document.createElement('section');
+      section.className = 'container pw-resources';
+      section.setAttribute('aria-labelledby', 'pw-resources-title');
+      const title = document.createElement('h2');
+      title.id = 'pw-resources-title';
+      title.textContent = 'Support & Community';
+      const row = document.createElement('div');
+      row.className = 'pw-resource-grid';
+      for (const card of resourceCards) row.append(card);
+      const policy = document.createElement('p');
+      policy.append(makeLink('privacy/index.html', 'Read the privacy policy'));
+      section.append(title, row, policy);
+      grid.after(section);
+    }
+    const tutorials = cards.filter(card => !resourceCards.includes(card));
+    if (header && grid && tutorials.length && !document.getElementById('pw-help-query')) {
+      const title = document.createElement('h2');
+      title.textContent = 'Tutorials';
+      title.className = 'container pw-tutorial-heading';
+      title.id = 'pw-tutorial-heading';
+      grid.setAttribute('aria-labelledby', title.id);
+      grid.before(title);
+      const search = document.createElement('div');
+      search.className = 'pw-search';
+      search.setAttribute('role', 'search');
+      search.setAttribute('aria-label', 'Find a tutorial');
+      search.innerHTML = '<label for="pw-help-query">Find a tutorial</label>' +
+        '<input id="pw-help-query" type="search" placeholder="Try planting dates or grouping" autocomplete="off" aria-describedby="pw-search-status">' +
+        '<p class="pw-search-status" id="pw-search-status" role="status" aria-live="polite"></p>';
+      header.append(search);
+      const empty = document.createElement('p');
+      empty.className = 'pw-empty container';
+      empty.hidden = true;
+      empty.append('No tutorials found. Try bed, planting, or grouping, or ', makeLink('help/support/index.html', 'contact support'), '.');
+      grid.after(empty);
+      const input = search.querySelector('input');
+      const status = search.querySelector('[role="status"]');
+      const normalize = value => value.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+      const items = tutorials.map(card => ({card, text: normalize(card.textContent)}));
+      input.addEventListener('input', () => {
+        const terms = normalize(input.value).trim().split(/\s+/).filter(Boolean);
+        let count = 0;
+        for (const item of items) {
+          item.card.hidden = !terms.every(term => item.text.includes(term));
+          if (!item.card.hidden) count++;
+        }
+        empty.hidden = count !== 0;
+        status.textContent = terms.length ? `${count} ${count === 1 ? 'tutorial' : 'tutorials'} found` : '';
+      });
+    }
+  }
+  for (const link of document.querySelectorAll('.blog-card-link')) {
+    link.textContent = isResource(new URL(link.href)) ? 'Read more →' : 'Read tutorial →';
+  }
+  for (const link of document.querySelectorAll('.blog-back-link')) link.textContent = '← Help & tutorials';
+
+  const article = document.querySelector('.blog-article-body');
+  if (article) {
+    const headings = Array.from(article.querySelectorAll('h2'));
+    if (headings.length) {
+      const contents = document.createElement('details');
+      contents.className = 'pw-contents';
+      const summary = document.createElement('summary');
+      summary.textContent = 'On this page';
+      const list = document.createElement('ul');
+      headings.forEach((heading, number) => {
+        if (!heading.id) heading.id = `tutorial-section-${number + 1}`;
+        const row = document.createElement('li');
+        const link = document.createElement('a');
+        const target = new URL(pageURL);
+        target.hash = heading.id;
+        link.href = target.href;
+        link.textContent = heading.textContent;
+        row.append(link);
+        list.append(row);
+      });
+      contents.append(summary, list);
+      article.before(contents);
+    }
+  }
+
+  for (const link of document.querySelectorAll('a[href]')) {
+    const raw = link.getAttribute('href');
+    if (!raw || /^(mailto:|tel:)/i.test(raw)) continue;
+    let target;
+    try {
+      // Root-relative Custom HTML links escape a locally exported site. Native
+      // Kickstart links are base-relative; use that convention for both.
+      target = new URL(/^\/(?!\/)/.test(raw) ? raw.slice(1) : raw, siteRoot);
+    } catch { continue; }
+    const local = target.origin === siteRoot.origin && target.pathname.startsWith(siteRoot.pathname);
+    if (!local) continue;
+    // A browser's file URL loader doesn't provide a web server's index fallback.
+    if (target.protocol === 'file:' && target.pathname.endsWith('/')) target.pathname += 'index.html';
+    link.href = target.href;
+    if (pageKey(target) === pageKey(pageURL) && !target.hash && link.closest('.site-header, .footer-links')) {
+      link.setAttribute('aria-current', 'page');
+    }
+  }
+});
+
+</script>
+  </head>
+  <body data-site-classes="site-shell">
+    <header>
+      <nav class="site-header navbar navbar-expand-md">
+        <div class="container flex-wrap flex-lg-nowrap">
+          <div class="me-2 me-md-auto">
+            <a href="./" class="brand-link d-inline-flex align-items-center navbar-brand"><span class="brand-name">Plotwise Garden</span></a>
+          </div>
+          <button type="button" class="navbar-toggler btn" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
+          <div id="navbarCollapse" class="collapse navbar-collapse">
+            <ul class="navbar-nav mb-2 mb-md-0 col justify-content-end">
+              <li class="nav-item"><a href="index.html#features" class="nav-link text-nowrap">Features</a></li>
+              <li class="nav-item"><a href="help/index.html" class="nav-link text-nowrap">Help &amp; Tutorials</a></li>
+              <li class="nav-item"><a href="help/support/index.html" class="nav-link text-nowrap">Support</a></li>
+              <li class="nav-item"><a href="index.html#features" class="text-nowrap btn btn-sm btn-primary">Explore the app</a></li>
+            </ul>
+          </div>
+        </div>
+      </nav>
+    </header>
+    <main class="site-main">
+      <div class="ig-main-content">
+        <div class="blog-post-page">
+          <div class="container blog-article-page">
+            <a href="help/" class="blog-back-link">Back to Blog</a>
+            <h1 class="blog-post-title">Manage several squares as one planting</h1>
+            <div class="blog-post-meta">
+              <p class="blog-post-meta-item">Nov 12, 2026</p>
+              <p class="blog-post-meta-item">Nathan Morgan</p>
+              <p class="blog-post-meta-item">3 min read</p>
+            </div>
+            <div class="blog-tag-list">
+              <span class="blog-tag">Grouping</span>
+              <span class="blog-tag">Separate plants</span>
+              <span class="blog-tag">Succession</span>
+            </div>
+            <div class="blog-article-body">
+              <p>Manage several squares of the same plant as one planting, with a shared plan, planting date, removal, and succession plan.</p>
+              <h2>When grouping helps</h2>
+              <p>If you’re planting several squares of garlic on the same day, grouping lets you plan and plant them together. With grouping off, each plant you place can be managed independently.</p>
+              <p>Grouped plants share one identity in the schedule, journal, and search, rather than becoming a separate planting for every square.</p>
+              <h2>1. Turn on Group plants</h2>
+              <p>Open a bed, tap the <strong>plus (+)</strong> button, and choose a plant. While placing it, tap <strong>Group plants</strong>, shown with a four-square grid icon.</p>
+              <p>The icon is filled and colored when grouping is on. An outline indicates that it is off. After you’ve used the control, it can appear as an icon in the header above the guidance cards.</p>
+              <p>Grouping applies to the plants you add during this placement session. It does not merge plantings you saved earlier.</p>
+              <h2>2. Add the squares you want to manage together</h2>
+              <p>Place the same plant and variety in the squares you want included. Grouped areas <strong>do not have to touch</strong>. For example, you can group flowers along different edges of a bed.</p>
+              <p>Each plant still needs its minimum size and shape. A plant that requires a 2 × 2 block needs complete blocks; four scattered squares are not equivalent.</p>
+              <p>Tap the <strong>checkmark (✓)</strong> to finish. The new group is now a single planting.</p>
+              <h2>3. Plan and plant the group</h2>
+              <p>Tap a square belonging to the group to select the planting. Use <strong>Edit plan</strong> to choose one method and date for the group, then <strong>Plant</strong> to confirm when it begins growing.</p>
+              <p>Removing this planting applies to the group. A succession plan also uses the group’s space, subject to the next plant’s footprint requirements.</p>
+              <p>If you want one part to have a different date, removal, or succession, separate that part first.</p>
+              <h2>4. Separate part of a planting later</h2>
+              <ol>
+                <li>Select the planting in your bed.</li>
+                <li>Tap <strong>Separate plants</strong>, shown with the overlapping-squares icon. After you’ve used it, the control can appear in the header.</li>
+                <li>Tap the squares you want to manage together as a separate planting.</li>
+                <li>Check <strong>Minimum size</strong> and <strong>Minimum shape</strong> below the bed. Both the selection and the part left behind must have a valid footprint. Existing successions can also affect whether a split is possible.</li>
+                <li>Tap the <strong>checkmark (✓)</strong> to save, or <strong>X</strong> to cancel.</li>
+              </ol>
+              <p>Your selected squares become one new planting. They keep the current plan, which you can then change independently.</p>
+              <h2>Common questions</h2>
+              <h3>Can I group different plants or varieties?</h3>
+              <p>No. Grouping is for the same plant and variety. Use separate plantings when they need to be managed differently.</p>
+              <h3>Can I select every square when separating?</h3>
+              <p>No. Leave a valid planting behind. For garlic, that can be one square. A larger plant needs its full minimum footprint in both parts.</p>
+              <h3>Is grouping available for containers?</h3>
+              <p>This grouping control is for bed squares. Container plantings are managed through their available container spaces.</p>
+              <p><a href="help/index.html">All help &amp; tutorials</a> · <a href="help/support/index.html">Contact support</a></p>
+            </div>
+            <script>(() => {
+    const documentURL = window.location.href.split('#')[0];
+    for (const link of document.querySelectorAll('.blog-article-body a[href^="#"]')) {
+        link.setAttribute('href', documentURL + link.getAttribute('href'));
+    }
+})();</script>
+          </div>
+        </div>
+      </div>
+    </main>
+    <div class="site-footer">
+      <div class="container">
+        <div class="footer-content">
+          <div class="footer-brand">
+            <p class="footer-tagline">Plan, Plant, and Prosper.</p>
+          </div>
+        </div>
+        <div class="footer-copyright">
+          <div class="footer-links">
+            <a href="help/" class="footer-privacy-link">Blog</a>
+            <a href="privacy/" class="footer-privacy-link">Privacy Policy</a>
+          </div>
+          <p>© 2026 Nathan Morgan. Plotwise Garden.</p>
+          <a href="https://www.kickstart.tools" class="footer-kickstart-link">Built with Kickstart</a>
+        </div>
+      </div>
+    </div>
+    <script src="js/bootstrap.bundle.min.js"></script>
+    <script src="js/ignite-core.js"></script>
+  </body>
+</html>
