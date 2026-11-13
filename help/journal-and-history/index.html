@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="en" data-light-theme="light" data-dark-theme="dark">
+  <head>
+    <base href="../../" />
+    <meta property="og:site_name" content="Plotwise Garden" />
+    <meta property="og:title" content="Keep a journal and explore history" />
+    <meta name="twitter:title" content="Keep a journal and explore history" />
+    <meta property="og:description" content="Keep observations and photos alongside planting activity, then revisit where a plant was growing when something happened." />
+    <meta name="twitter:description" content="Keep observations and photos alongside planting activity, then revisit where a plant was growing when something happened." />
+    <meta property="og:url" content="https://plotwisegarden.com/help/journal-and-history" />
+    <meta name="twitter:domain" content="plotwisegarden.com" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:dnt" content="on" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Keep observations and photos alongside planting activity, then revisit where a plant was growing when something happened." />
+    <meta name="generator" content="Ignite v0.6.9" />
+    <title>Keep a journal and explore history - Plotwise Garden</title>
+    <link href="css/bootstrap.min.css" rel="stylesheet" />
+    <link href="css/bootstrap-icons.min.css" rel="stylesheet" />
+    <link href="css/ignite-core.min.css" rel="stylesheet" />
+    <link href="https://plotwisegarden.com/help/journal-and-history" rel="canonical" />
+    <link href="images/favicon.png" rel="icon" />
+    <link href="css/styles.css" rel="stylesheet" />
+    <style>
+:root {
+    --primary-color: #46624b;
+    --primary-rgb: 70, 98, 75;
+    --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    color-scheme: light dark;
+}
+</style>
+    <link href="css/custom.css" rel="stylesheet" />
+    <meta name="apple-itunes-app" content="app-id=6764432303" />
+    <meta name="description" content="Design your growing space, plan your season, and learn from everything you grow with Plotwise Garden for iPhone." /> 
+    <script>
+/* Saved in Kickstart Custom Head. Native article titles, summaries, and tags are
+ * the help library's source of truth. No generated pages need post-export edits.
+ * Topic tags control navigation; untagged tutorials remain under More tutorials.
+ */
+document.addEventListener('DOMContentLoaded', () => {
+  const siteRoot = new URL(document.baseURI);
+  const pageURL = new URL(location.href);
+  const pageKey = url => url.pathname.replace(/index\.html$/, '').replace(/\/$/, '');
+  const normalize = text => text.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const topics = [
+    {id: 'beds-containers', title: 'Beds & containers', description: 'Set up your growing spaces and make room for your plants.'},
+    {id: 'planning-planting', title: 'Planning & planting', description: 'Choose planting dates, manage groups, and plan what comes next.'},
+    {id: 'schedule-guidance', title: 'Schedule & guidance', description: 'Read your schedule and understand your garden’s guidance.'},
+    {id: 'journal-history', title: 'Journal & history', description: 'Record what happens and revisit your garden over time.'},
+    {id: 'catalogs-identification', title: 'Catalogs & photo identification', description: 'Explore plants and guides, and investigate what you’ve spotted.'},
+    {id: 'community', title: 'Community', description: 'Ask questions and share your growing experience.'},
+    {id: 'more', title: 'More tutorials', description: 'More ways to get to know Plotwise.'},
+  ];
+  const resources = [
+    {path: 'help/support/index.html', title: 'Support'},
+    {path: 'help/changelog/index.html', title: 'Changelog'},
+    {path: 'help/community-guidelines/index.html', title: 'Community guidelines'},
+    {path: 'privacy/index.html', title: 'Privacy policy'},
+  ];
+  const resourceFor = url => resources.find(r => pageKey(url) === pageKey(new URL(r.path, siteRoot)));
+  const element = (tag, className, text) => {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text) node.textContent = text;
+    return node;
+  };
+  const localURL = path => {
+    const url = new URL(path, siteRoot);
+    if (url.protocol === 'file:' && url.pathname.endsWith('/')) url.pathname += 'index.html';
+    return url;
+  };
+  const link = (path, title, className = 'pw-link') => {
+    const node = element('a', className, title);
+    node.href = localURL(path).href;
+    return node;
+  };
+  const topicPath = topic => `help/index.html?topic=${encodeURIComponent(topic.id)}`;
+  const readItems = doc => Array.from(doc.querySelectorAll('.blog-card')).flatMap(card => {
+    const title = card.querySelector('.blog-card-title');
+    if (!title) return [];
+    const url = localURL(title.getAttribute('href'));
+    const tags = Array.from(card.querySelectorAll('.blog-tag'), tag => tag.textContent.trim());
+    return [{title: title.textContent.trim(), url: url.href,
+      summary: card.querySelector('.blog-card-summary')?.textContent.trim() || '', tags,
+      topic: topics.find(t => tags.includes(t.title)) || topics.at(-1), resource: resourceFor(url)}];
+  });
+  const topicOfPage = () => {
+    const tags = Array.from(document.querySelectorAll('.blog-article-page > .blog-tag-list .blog-tag'), e => e.textContent.trim());
+    return topics.find(t => tags.includes(t.title)) || topics.at(-1);
+  };
+  const tutorialRow = item => {
+    const row = element('li');
+    const a = link(item.url, '', 'pw-tutorial-link');
+    a.append(element('span', 'pw-tutorial-title', item.title), element('span', 'pw-tutorial-summary', item.summary));
+    row.append(a);
+    return row;
+  };
+  const listOf = items => {
+    const list = element('ul', 'pw-tutorial-list');
+    items.forEach(item => list.append(tutorialRow(item)));
+    return list;
+  };
+  const breadcrumbs = (topic, current) => {
+    const nav = element('nav', 'pw-breadcrumbs');
+    nav.setAttribute('aria-label', 'Breadcrumb');
+    nav.append(link('help/index.html', 'Help'));
+    if (topic) nav.append(element('span', '', '/'), link(topicPath(topic), topic.title));
+    if (current) {
+      const label = element('span', 'pw-current', current);
+      label.setAttribute('aria-current', 'page');
+      nav.append(element('span', '', '/'), label);
+    }
+    return nav;
+  };
+
+  const footer = document.querySelector('.footer-links');
+  if (footer) {
+    for (const a of footer.querySelectorAll('a')) {
+      if (pageKey(new URL(a.href)) === pageKey(localURL('help/'))) a.textContent = 'Help & Tutorials';
+    }
+    for (const item of resources) {
+      if (![...footer.querySelectorAll('a')].some(a => pageKey(new URL(a.href)) === pageKey(localURL(item.path)))) {
+        footer.append(link(item.path, item.title, 'footer-privacy-link'));
+      }
+    }
+  }
+
+  const index = document.querySelector('.blog-index-page');
+  if (index) {
+    const header = index.querySelector('.blog-index-header');
+    const nativeGrid = index.querySelector('.blog-index-grid');
+    if (header && nativeGrid) {
+      const tutorials = readItems(document).filter(item => !item.resource);
+      const library = element('div', 'container pw-library');
+      const intro = element('section', 'pw-start');
+      intro.setAttribute('aria-labelledby', 'pw-start-heading');
+      const introTitle = element('h2', '', 'Start here'); introTitle.id = 'pw-start-heading';
+      intro.append(introTitle, element('p', 'pw-muted', 'Create a growing space, then make your first planting plan.'));
+      const firstSteps = ['create-your-first-bed', 'plan-and-plant'];
+      const starters = tutorials.filter(item => item.tags.includes('Start here')).sort((a, b) => {
+        const rank = item => {const n = firstSteps.findIndex(slug => pageKey(new URL(item.url)).endsWith('/' + slug)); return n < 0 ? 999 : n;};
+        return rank(a) - rank(b);
+      });
+      const steps = element('ol', 'pw-start-list');
+      starters.forEach(item => { const row = element('li'); row.append(link(item.url, item.title, 'pw-start-link')); steps.append(row); });
+      intro.append(steps); intro.hidden = !starters.length;
+      const browse = element('section', 'pw-browse');
+      const browseTitle = element('h2', '', 'Browse by topic'); browseTitle.id = 'pw-browse-heading';
+      browse.setAttribute('aria-labelledby', browseTitle.id); browse.append(browseTitle);
+      const topicGrid = element('div', 'pw-topic-grid');
+      for (const topic of topics) {
+        const entries = tutorials.filter(item => item.topic.id === topic.id);
+        if (!entries.length) continue;
+        const section = element('section', 'pw-topic-card');
+        const h = element('h3'); h.append(link(topicPath(topic), topic.title));
+        section.append(h, element('p', 'pw-muted', topic.description), listOf(entries.slice(0, 4)));
+        if (entries.length > 4) section.append(link(topicPath(topic), `View all ${entries.length} tutorials`));
+        topicGrid.append(section);
+      }
+      browse.append(topicGrid);
+      const results = element('section', 'pw-results'); results.hidden = true;
+      const resultsTitle = element('h2', '', 'Search results'); resultsTitle.id = 'pw-results-heading';
+      results.setAttribute('aria-labelledby', resultsTitle.id);
+      const resultList = element('ul', 'pw-tutorial-list');
+      const empty = element('p', 'pw-empty'); empty.hidden = true;
+      empty.append('No tutorials found. Try a plant feature or task, or ', link('help/support/index.html', 'contact support'), '.');
+      results.append(resultsTitle, resultList, empty);
+      const appHelp = element('section', 'pw-app-help');
+      const appHelpTitle = element('h2', '', 'App help'); appHelpTitle.id = 'pw-app-help-heading';
+      appHelp.setAttribute('aria-labelledby', appHelpTitle.id);
+      const resourceLinks = element('div', 'pw-resource-links');
+      resources.forEach(item => resourceLinks.append(link(item.path, item.title)));
+      appHelp.append(appHelpTitle, resourceLinks);
+      library.append(intro, browse, results, appHelp);
+      nativeGrid.after(library);
+      nativeGrid.hidden = true; // Unenhanced native cards remain available without JavaScript.
+      const search = element('form', 'pw-search');
+      search.setAttribute('role', 'search'); search.setAttribute('aria-label', 'Search help');
+      const label = element('label', '', 'Search help'); label.htmlFor = 'pw-help-query';
+      const input = element('input'); input.id = 'pw-help-query'; input.type = 'search'; input.name = 'q';
+      input.placeholder = 'Try planting dates or grouping'; input.autocomplete = 'off';
+      const status = element('p', 'pw-search-status'); status.id = 'pw-search-status';
+      status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite');
+      input.setAttribute('aria-describedby', status.id);
+      search.append(label, input, status); header.append(search);
+      const params = pageURL.searchParams;
+      const selectedTopic = topics.find(topic => topic.id === params.get('topic'));
+      if (selectedTopic) {
+        const title = header.querySelector('h1');
+        title.before(breadcrumbs(null, selectedTopic.title)); title.textContent = selectedTopic.title;
+        const subtitle = header.querySelector('.blog-index-description');
+        if (subtitle) subtitle.textContent = selectedTopic.description;
+        header.append(link('help/index.html', '← All topics'));
+      }
+      const renderResults = () => {
+        const terms = normalize(input.value).trim().split(/\s+/).filter(Boolean);
+        const searching = terms.length > 0;
+        intro.hidden = searching || !!selectedTopic || !starters.length;
+        browse.hidden = searching || !!selectedTopic;
+        results.hidden = !searching && !selectedTopic;
+        // Searching always covers the library, including from a topic landing page.
+        const matches = tutorials.filter(item => searching
+          ? terms.every(term => normalize([item.title, item.summary, ...item.tags].join(' ')).includes(term))
+          : !selectedTopic || item.topic.id === selectedTopic.id);
+        resultsTitle.textContent = searching ? 'Search results' : 'Tutorials';
+        resultList.replaceChildren(...matches.map(tutorialRow));
+        empty.hidden = matches.length > 0;
+        status.textContent = searching ? `${matches.length} ${matches.length === 1 ? 'tutorial' : 'tutorials'} found` : '';
+      };
+      input.value = params.get('q') || '';
+      input.addEventListener('input', renderResults);
+      search.addEventListener('submit', event => {
+        event.preventDefault();
+        const url = new URL(pageURL); if (input.value.trim()) url.searchParams.set('q', input.value.trim()); else url.searchParams.delete('q');
+        history.replaceState(null, '', url); renderResults();
+      });
+      renderResults();
+    }
+  }
+
+  for (const a of document.querySelectorAll('.blog-card-link')) a.textContent = resourceFor(new URL(a.href)) ? 'Read more →' : 'Read tutorial →';
+  for (const a of document.querySelectorAll('.blog-back-link')) a.textContent = '← Help & tutorials';
+  const article = document.querySelector('.blog-article-body');
+  if (article) {
+    const page = article.closest('.blog-article-page');
+    const isResource = resourceFor(pageURL);
+    const topic = isResource ? null : topicOfPage();
+    const title = page.querySelector('h1');
+    const back = page.querySelector('.blog-back-link');
+    const crumb = breadcrumbs(topic, title.textContent);
+    if (back) back.replaceWith(crumb); else title.before(crumb);
+    page.classList.add('pw-article-enhanced');
+    // Keep the article's native title/body and editable related links intact.
+    const layout = element('div', 'pw-article-layout');
+    const main = element('div', 'pw-article-main');
+    const sidebar = element('aside', 'pw-help-sidebar');
+    const navigation = element('details', 'pw-help-nav');
+    navigation.append(element('summary', '', 'Browse help'));
+    const nav = element('nav'); nav.setAttribute('aria-label', 'Help topics');
+    nav.append(link('help/index.html', 'All help & tutorials'));
+    resources.forEach(item => nav.append(link(item.path, item.title)));
+    navigation.append(nav); sidebar.append(navigation);
+    const articleNodes = [...page.children];
+    articleNodes.forEach(node => main.append(node));
+    layout.append(sidebar, main); page.append(layout);
+    const wide = matchMedia('(min-width: 1000px)');
+    const adaptNavigation = () => { navigation.open = wide.matches; };
+    adaptNavigation(); wide.addEventListener('change', adaptNavigation);
+    navigation.addEventListener('toggle', () => { if (wide.matches && !navigation.open) navigation.open = true; });
+    // One small same-origin request supplies current native article titles/tags.
+    // File previews cannot fetch; their Browse help link and related links still work.
+    if (location.protocol !== 'file:') {
+      fetch(localURL('help/index.html'), {signal: AbortSignal.timeout(8000)})
+        .then(response => {if (!response.ok) throw new Error('Help index unavailable'); return response.text();})
+        .then(html => {
+          const items = readItems(new DOMParser().parseFromString(html, 'text/html')).filter(item => !item.resource);
+          const fragment = document.createDocumentFragment();
+          fragment.append(link('help/index.html', 'All help & tutorials'));
+          topics.forEach(t => {
+            const entries = items.filter(item => item.topic.id === t.id);
+            if (!entries.length) return;
+            const group = element('details', 'pw-nav-topic'); group.open = topic?.id === t.id;
+            group.append(element('summary', '', t.title));
+            const list = element('ul');
+            entries.forEach(item => {const li = element('li'); const a = link(item.url, item.title);
+              if (pageKey(new URL(item.url)) === pageKey(pageURL)) a.setAttribute('aria-current', 'page');
+              li.append(a); list.append(li);});
+            group.append(list); fragment.append(group);
+          });
+          const appHelp = element('div', 'pw-nav-resources'); appHelp.append(element('p', '', 'App help'));
+          resources.forEach(item => {const a = link(item.path, item.title); if (pageKey(new URL(a.href)) === pageKey(pageURL)) a.setAttribute('aria-current', 'page'); appHelp.append(a);});
+          fragment.append(appHelp); nav.replaceChildren(fragment);
+        }).catch(() => { /* Preserve working links if this optional enhancement cannot load. */ });
+    }
+    const headings = [...article.querySelectorAll('h2')].filter(h => h.textContent !== 'Related tutorials');
+    if (headings.length) {
+      const contents = element('details', 'pw-contents');
+      contents.append(element('summary', '', 'On this page'));
+      const list = element('ul');
+      headings.forEach((heading, number) => {
+        if (!heading.id) heading.id = `tutorial-section-${number + 1}`;
+        const row = element('li'); const target = new URL(pageURL); target.hash = heading.id;
+        row.append(link(target.href, heading.textContent)); list.append(row);
+      });
+      contents.append(list); article.before(contents);
+    }
+  }
+
+  for (const a of document.querySelectorAll('a[href]')) {
+    const raw = a.getAttribute('href');
+    if (!raw || /^(mailto:|tel:)/i.test(raw)) continue;
+    let target;
+    try { target = localURL(/^\/(?!\/)/.test(raw) ? raw.slice(1) : raw); } catch { continue; }
+    if (target.origin !== siteRoot.origin || !target.pathname.startsWith(siteRoot.pathname)) continue;
+    a.href = target.href;
+    if (pageKey(target) === pageKey(pageURL) && !target.hash && !target.search && a.closest('.site-header, .footer-links')) a.setAttribute('aria-current', 'page');
+  }
+});
+
+</script>
+  </head>
+  <body data-site-classes="site-shell">
+    <header>
+      <nav class="site-header navbar navbar-expand-md">
+        <div class="container flex-wrap flex-lg-nowrap">
+          <div class="me-2 me-md-auto">
+            <a href="./" class="brand-link d-inline-flex align-items-center navbar-brand"><span class="brand-name">Plotwise Garden</span></a>
+          </div>
+          <button type="button" class="navbar-toggler btn" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
+          <div id="navbarCollapse" class="collapse navbar-collapse">
+            <ul class="navbar-nav mb-2 mb-md-0 col justify-content-end">
+              <li class="nav-item"><a href="index.html#features" class="nav-link text-nowrap">Features</a></li>
+              <li class="nav-item"><a href="help/index.html" class="nav-link text-nowrap">Help &amp; Tutorials</a></li>
+              <li class="nav-item"><a href="help/support/index.html" class="nav-link text-nowrap">Support</a></li>
+              <li class="nav-item"><a href="index.html#features" class="text-nowrap btn btn-sm btn-primary">Explore the app</a></li>
+            </ul>
+          </div>
+        </div>
+      </nav>
+    </header>
+    <main class="site-main">
+      <div class="ig-main-content">
+        <div class="blog-post-page">
+          <div class="container blog-article-page">
+            <a href="help/" class="blog-back-link">Back to Blog</a>
+            <h1 class="blog-post-title">Keep a journal and explore history</h1>
+            <div class="blog-post-meta">
+              <p class="blog-post-meta-item">Nov 12, 2026</p>
+              <p class="blog-post-meta-item">3 min read</p>
+            </div>
+            <div class="blog-tag-list">
+              <span class="blog-tag">Journal &amp; history</span>
+              <span class="blog-tag">Photos</span>
+              <span class="blog-tag">Notes</span>
+              <span class="blog-tag">Tags</span>
+              <span class="blog-tag">Activity</span>
+              <span class="blog-tag">View history</span>
+              <span class="blog-tag">View in garden</span>
+              <span class="blog-tag">Hide activity</span>
+              <span class="blog-tag">Removed plants</span>
+            </div>
+            <div class="blog-article-body">
+              <p>Keep observations and photos alongside planting activity, then revisit where a plant was growing when something happened.</p>
+              <h2>Notes and activity have different jobs</h2>
+              <p>A <strong>journal entry</strong> is something you write or photograph: an observation, harvest note, experiment, or reminder for next time.</p>
+              <p>An <strong>activity</strong> records an action in the app, such as planting, transplanting within a bed, or removing a planting. You can add a journal note while recording some actions, so the event and your observations stay connected.</p>
+              <p>Use <strong>Almanac → Journal</strong> for the garden-wide record. Open <strong>Journal</strong> inside a bed or container group for that space’s record. Entries are grouped by month.</p>
+              <h2>Add a useful entry</h2>
+              <p>Use <strong>Add journal entry</strong> from the relevant growing space or planting. Check the subject, then add your note, photos, and optional tags. A short note about what you tried and what happened can be more useful next season than a perfect daily record.</p>
+              <p>You can choose photos from your library, take a photo, or add an image from Files. Tap a thumbnail to view it and, when available, identify what is in the photo.</p>
+              <p>A standalone entry has its own date. A note added while recording a planting or removal uses that event’s date; there is no second date to edit for the same event.</p>
+              <!-- ICON: Add journal entry — insert the app's actual journal control beside its name. --> 
+              <!-- MEDIA: journal-entry-subject — Show a qualified plant name, location, note, photo, references, and tags in one saved entry. --> 
+              <h2>Go back to the subject</h2>
+              <p>Tap an activity to locate its subject. For a written journal entry, open it to read the note and use <strong>View in garden</strong> to locate the subject.</p>
+              <p>If the planting is still in its recorded space, Plotwise selects it in the current layout. If it has moved or been removed, a historical view can show the recorded position instead. Other plants changing elsewhere in the bed do not, by themselves, require a historical view of this subject.</p>
+              <p>When the bed or containers are visible, pressing and holding a subject’s activity or entry can preview its recorded location without committing to a selection.</p>
+              <h2>Scroll through history</h2>
+              <p>In a bed or container group’s Journal, turn on <strong>View history</strong>. As you scroll, the highlighted entry selects the historical moment shown above. This is a view of recorded changes, not a prediction of what the plant looked like on that day.</p>
+              <p>Tap <strong>View history</strong> again to return to the current layout. Swipe actions are unavailable while this mode is on; turn it off before editing or removing entries.</p>
+              <!-- ICON: View history — use clock.arrow.circlepath, matching the app's control; placeholder only, no web symbol font. --> 
+              <!-- MEDIA: journal-history — Show the highlighted event and its matching bed layout, followed by returning to the current layout. --> 
+              <p>Older records may not contain enough position information to reconstruct every planting. History cannot recover details that were never recorded.</p>
+              <h2>Remove a note or hide an activity</h2>
+              <p>Swipe a written entry to <strong>Edit</strong> or <strong>Remove</strong> it. Removing the entry removes its note and attached photos from your journal.</p>
+              <p>For an automatic activity, <strong>Hide</strong> permanently hides that row from the journal. It does not undo the planting or removal. Use the planting’s own controls to change your current garden.</p>
+              <h2>Related tutorials</h2>
+              <ul>
+                <li><a href="help/identify-a-photo/index.html">Identify a photo and save useful references</a></li>
+                <li><a href="help/move-and-remove-plantings/index.html">Move and remove plantings</a></li>
+                <li><a href="help/group-plants/index.html">Manage several squares as one planting</a></li>
+              </ul>
+              <p><a href="help/index.html">All help &amp; tutorials</a> · <a href="help/support/index.html">Contact support</a></p>
+            </div>
+            <script>(() => {
+    const documentURL = window.location.href.split('#')[0];
+    for (const link of document.querySelectorAll('.blog-article-body a[href^="#"]')) {
+        link.setAttribute('href', documentURL + link.getAttribute('href'));
+    }
+})();</script>
+          </div>
+        </div>
+      </div>
+    </main>
+    <div class="site-footer">
+      <div class="container">
+        <div class="footer-content">
+          <div class="footer-brand">
+            <p class="footer-tagline">Plan, Plant, and Prosper.</p>
+          </div>
+        </div>
+        <div class="footer-copyright">
+          <div class="footer-links">
+            <a href="help/" class="footer-privacy-link">Blog</a>
+            <a href="privacy/" class="footer-privacy-link">Privacy Policy</a>
+          </div>
+          <p>© 2026 Plotwise Garden.</p>
+          <a href="https://www.kickstart.tools" class="footer-kickstart-link">Built with Kickstart</a>
+        </div>
+      </div>
+    </div>
+    <script src="js/bootstrap.bundle.min.js"></script>
+    <script src="js/ignite-core.js"></script>
+  </body>
+</html>
