@@ -134,3 +134,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visibl
   .pw-article-main { max-width: none; }
 }
 @media (max-width: 700px) { .pw-topic-grid, .pw-start-list { grid-template-columns: minmax(0, 1fr); } }
+
+/* Keep imported tutorial assets in Kickstart, without featuring the gallery on the homepage.
+   Remove this rule when a curated homepage screenshot set is ready. */
+.ig-main-content > .screenshots-section { display: none; }
