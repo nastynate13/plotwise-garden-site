@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const normalize = text => text.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   const topics = [
     {id: 'beds-containers', title: 'Beds & containers', description: 'Set up your growing spaces and make room for your plants.'},
-    {id: 'planning-planting', title: 'Planning & planting', description: 'Choose planting dates, manage groups, and plan what comes next.'},
+    {id: 'planning-planting', title: 'Plotting, Planning, and Planting', description: 'Plot your space, plan planting dates, and grow through the season.'},
     {id: 'schedule-guidance', title: 'Schedule & guidance', description: 'Read your schedule and understand your garden’s guidance.'},
     {id: 'journal-history', title: 'Journal & history', description: 'Record what happens and revisit your garden over time.'},
     {id: 'catalogs-identification', title: 'Catalogs & photo identification', description: 'Explore plants and guides, and investigate what you’ve spotted.'},
@@ -76,6 +76,31 @@ document.addEventListener('DOMContentLoaded', () => {
     return node;
   };
   const topicPath = topic => `help/index.html?topic=${encodeURIComponent(topic.id)}`;
+  // Stable tutorial sequence, independent of edit/publish dates. Unlisted new
+  // articles retain Kickstart's order after the curated sequence in each topic.
+  const tutorialOrder = ['create-your-first-bed', 'grow-in-containers', 'map-sunlight-and-set-north',
+    'plan-and-plant', 'plan-what-grows-next', 'move-and-remove-plantings', 'group-plants'];
+  const tutorialRank = item => {
+    const rank = tutorialOrder.findIndex(slug => pageKey(new URL(item.url)).endsWith('/' + slug));
+    return rank < 0 ? tutorialOrder.length : rank;
+  };
+  // Stable routes preserve categories when Kickstart previews mix cached article
+  // tags with freshly saved navigation, or a topic display name changes.
+  const topicBySlug = {
+    'create-your-first-bed': 'beds-containers', 'grow-in-containers': 'beds-containers',
+    'map-sunlight-and-set-north': 'beds-containers',
+    'plan-and-plant': 'planning-planting', 'plan-what-grows-next': 'planning-planting',
+    'move-and-remove-plantings': 'planning-planting', 'group-plants': 'planning-planting',
+    'understand-your-schedule': 'schedule-guidance', 'understand-garden-guidance': 'schedule-guidance',
+    'journal-and-history': 'journal-history', 'identify-a-photo': 'catalogs-identification',
+    'choose-varieties-and-use-catalogs': 'catalogs-identification', 'join-community': 'community',
+  };
+  const resolveTopic = (tags, url) => {
+    const tagged = topics.find(t => tags.includes(t.title));
+    if (tagged) return tagged;
+    const slug = pageKey(url).split('/').at(-1);
+    return topics.find(t => t.id === topicBySlug[slug]) || topics.at(-1);
+  };
   const readItems = doc => Array.from(doc.querySelectorAll('.blog-card')).flatMap(card => {
     const title = card.querySelector('.blog-card-title');
     if (!title) return [];
@@ -83,11 +108,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const tags = Array.from(card.querySelectorAll('.blog-tag'), tag => tag.textContent.trim());
     return [{title: title.textContent.trim(), url: url.href,
       summary: card.querySelector('.blog-card-summary')?.textContent.trim() || '', tags,
-      topic: topics.find(t => tags.includes(t.title)) || topics.at(-1), resource: resourceFor(url)}];
-  });
+      topic: resolveTopic(tags, url), resource: resourceFor(url)}];
+  }).sort((a, b) => tutorialRank(a) - tutorialRank(b));
   const topicOfPage = () => {
     const tags = Array.from(document.querySelectorAll('.blog-article-page > .blog-tag-list .blog-tag'), e => e.textContent.trim());
-    return topics.find(t => tags.includes(t.title)) || topics.at(-1);
+    return resolveTopic(tags, pageURL);
   };
   const tutorialRow = item => {
     const row = element('li');
@@ -136,15 +161,27 @@ document.addEventListener('DOMContentLoaded', () => {
       const intro = element('section', 'pw-start');
       intro.setAttribute('aria-labelledby', 'pw-start-heading');
       const introTitle = element('h2', '', 'Start here'); introTitle.id = 'pw-start-heading';
-      intro.append(introTitle, element('p', 'pw-muted', 'Create a growing space, then make your first planting plan.'));
-      const firstSteps = ['create-your-first-bed', 'plan-and-plant'];
-      const starters = tutorials.filter(item => item.tags.includes('Start here')).sort((a, b) => {
-        const rank = item => {const n = firstSteps.findIndex(slug => pageKey(new URL(item.url)).endsWith('/' + slug)); return n < 0 ? 999 : n;};
-        return rank(a) - rank(b);
+      intro.append(introTitle, element('p', 'pw-muted', 'Create a growing space, then plot and plan your first planting.'));
+      const starterPaths = [
+        {title: 'Beds', slugs: ['create-your-first-bed', 'plan-and-plant']},
+        {title: 'Containers', slugs: ['grow-in-containers', 'plan-and-plant']},
+      ];
+      const starters = [];
+      const paths = element('div', 'pw-start-paths');
+      starterPaths.forEach(path => {
+        const section = element('section', 'pw-start-path');
+        section.append(element('h3', '', path.title));
+        const steps = element('ol', 'pw-start-list');
+        path.slugs.forEach(slug => {
+          const item = tutorials.find(item => pageKey(new URL(item.url)).endsWith('/' + slug));
+          if (!item) return;
+          starters.push(item);
+          const row = element('li');
+          row.append(link(item.url, item.title, 'pw-start-link')); steps.append(row);
+        });
+        section.append(steps); paths.append(section);
       });
-      const steps = element('ol', 'pw-start-list');
-      starters.forEach(item => { const row = element('li'); row.append(link(item.url, item.title, 'pw-start-link')); steps.append(row); });
-      intro.append(steps); intro.hidden = !starters.length;
+      intro.append(paths); intro.hidden = !starters.length;
       const browse = element('section', 'pw-browse');
       const browseTitle = element('h2', '', 'Browse by topic'); browseTitle.id = 'pw-browse-heading';
       browse.setAttribute('aria-labelledby', browseTitle.id); browse.append(browseTitle);
@@ -330,7 +367,9 @@ document.addEventListener('DOMContentLoaded', () => {
               <p class="blog-post-meta-item">3 min read</p>
             </div>
             <div class="blog-tag-list">
-              <span class="blog-tag">Planning &amp; planting</span>
+              <span class="blog-tag">Plotting</span>
+              <span class="blog-tag">Planning</span>
+              <span class="blog-tag">and Planting</span>
               <span class="blog-tag">Move</span>
               <span class="blog-tag">Transplant</span>
               <span class="blog-tag">Remove</span>
@@ -350,10 +389,18 @@ document.addEventListener('DOMContentLoaded', () => {
               <!-- MEDIA: move-planting — Short future clip showing a valid move and an occupied destination being rejected. Distinguish moving a plan from a recorded transplant in the caption. --> 
               <!-- ICON: Separate plants — use the actual control next to its name. --> 
               <h2>Remove a planting</h2>
-              <p>Select the planting and use its <strong>Remove</strong> control. Read the description above the confirmation button before confirming.</p>
+              <p><strong>In a bed:</strong> tap the planting’s squares to select it.</p>
+              <p><strong>In a container group:</strong> select the container, then choose the planting from its list.</p>
+              <p>Use <strong>Remove</strong> below the planting’s guidance. Read the description above the confirmation button before confirming.</p>
               <p>For a plant marked as planted, you can record the removal date, optionally choose what happened, and add a journal note with photos. More than one reason may apply. For a plan that was never planted, removal discards the plan rather than recording a harvest or the end of a growing plant.</p>
               <p>Removing a grouped planting removes the whole group. If you are clearing only some squares, separate that portion first.</p>
-              <!-- MEDIA: remove-planting — Show the removal date, optional reasons, journal toggle, and bottom Remove button. Keep the destructive confirmation visible. --> 
+              <figure class="pw-tutorial-figure" style="width:100%;max-width:280px;margin:1.5rem auto;"> 
+                <a href="images/screenshots/move-remove-01-confirmation-framed.png"><img src="images/screenshots/move-remove-01-confirmation-framed.png" alt="Remove Garlic sheet showing removal date, optional reasons and a journal entry option." loading="lazy" style="display:block;width:100%;height:auto;" /></a> 
+                <figcaption>
+                  Record the removal date and optionally add a note.
+                </figcaption> 
+              </figure> 
+              <!-- MEDIA: remove-planting-container — Container group: show selecting a planting from the container list and its Remove control. Reuse the shared confirmation screenshot where possible. --> 
               <h2>Decide what happens to successions</h2>
               <p>If the planting has planned successions, review <strong>Remove planned successions</strong>:</p>
               <ul>

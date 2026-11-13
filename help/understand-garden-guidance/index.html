@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const normalize = text => text.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   const topics = [
     {id: 'beds-containers', title: 'Beds & containers', description: 'Set up your growing spaces and make room for your plants.'},
-    {id: 'planning-planting', title: 'Planning & planting', description: 'Choose planting dates, manage groups, and plan what comes next.'},
+    {id: 'planning-planting', title: 'Plotting, Planning, and Planting', description: 'Plot your space, plan planting dates, and grow through the season.'},
     {id: 'schedule-guidance', title: 'Schedule & guidance', description: 'Read your schedule and understand your garden’s guidance.'},
     {id: 'journal-history', title: 'Journal & history', description: 'Record what happens and revisit your garden over time.'},
     {id: 'catalogs-identification', title: 'Catalogs & photo identification', description: 'Explore plants and guides, and investigate what you’ve spotted.'},
@@ -76,6 +76,31 @@ document.addEventListener('DOMContentLoaded', () => {
     return node;
   };
   const topicPath = topic => `help/index.html?topic=${encodeURIComponent(topic.id)}`;
+  // Stable tutorial sequence, independent of edit/publish dates. Unlisted new
+  // articles retain Kickstart's order after the curated sequence in each topic.
+  const tutorialOrder = ['create-your-first-bed', 'grow-in-containers', 'map-sunlight-and-set-north',
+    'plan-and-plant', 'plan-what-grows-next', 'move-and-remove-plantings', 'group-plants'];
+  const tutorialRank = item => {
+    const rank = tutorialOrder.findIndex(slug => pageKey(new URL(item.url)).endsWith('/' + slug));
+    return rank < 0 ? tutorialOrder.length : rank;
+  };
+  // Stable routes preserve categories when Kickstart previews mix cached article
+  // tags with freshly saved navigation, or a topic display name changes.
+  const topicBySlug = {
+    'create-your-first-bed': 'beds-containers', 'grow-in-containers': 'beds-containers',
+    'map-sunlight-and-set-north': 'beds-containers',
+    'plan-and-plant': 'planning-planting', 'plan-what-grows-next': 'planning-planting',
+    'move-and-remove-plantings': 'planning-planting', 'group-plants': 'planning-planting',
+    'understand-your-schedule': 'schedule-guidance', 'understand-garden-guidance': 'schedule-guidance',
+    'journal-and-history': 'journal-history', 'identify-a-photo': 'catalogs-identification',
+    'choose-varieties-and-use-catalogs': 'catalogs-identification', 'join-community': 'community',
+  };
+  const resolveTopic = (tags, url) => {
+    const tagged = topics.find(t => tags.includes(t.title));
+    if (tagged) return tagged;
+    const slug = pageKey(url).split('/').at(-1);
+    return topics.find(t => t.id === topicBySlug[slug]) || topics.at(-1);
+  };
   const readItems = doc => Array.from(doc.querySelectorAll('.blog-card')).flatMap(card => {
     const title = card.querySelector('.blog-card-title');
     if (!title) return [];
@@ -83,11 +108,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const tags = Array.from(card.querySelectorAll('.blog-tag'), tag => tag.textContent.trim());
     return [{title: title.textContent.trim(), url: url.href,
       summary: card.querySelector('.blog-card-summary')?.textContent.trim() || '', tags,
-      topic: topics.find(t => tags.includes(t.title)) || topics.at(-1), resource: resourceFor(url)}];
-  });
+      topic: resolveTopic(tags, url), resource: resourceFor(url)}];
+  }).sort((a, b) => tutorialRank(a) - tutorialRank(b));
   const topicOfPage = () => {
     const tags = Array.from(document.querySelectorAll('.blog-article-page > .blog-tag-list .blog-tag'), e => e.textContent.trim());
-    return topics.find(t => tags.includes(t.title)) || topics.at(-1);
+    return resolveTopic(tags, pageURL);
   };
   const tutorialRow = item => {
     const row = element('li');
@@ -136,15 +161,27 @@ document.addEventListener('DOMContentLoaded', () => {
       const intro = element('section', 'pw-start');
       intro.setAttribute('aria-labelledby', 'pw-start-heading');
       const introTitle = element('h2', '', 'Start here'); introTitle.id = 'pw-start-heading';
-      intro.append(introTitle, element('p', 'pw-muted', 'Create a growing space, then make your first planting plan.'));
-      const firstSteps = ['create-your-first-bed', 'plan-and-plant'];
-      const starters = tutorials.filter(item => item.tags.includes('Start here')).sort((a, b) => {
-        const rank = item => {const n = firstSteps.findIndex(slug => pageKey(new URL(item.url)).endsWith('/' + slug)); return n < 0 ? 999 : n;};
-        return rank(a) - rank(b);
+      intro.append(introTitle, element('p', 'pw-muted', 'Create a growing space, then plot and plan your first planting.'));
+      const starterPaths = [
+        {title: 'Beds', slugs: ['create-your-first-bed', 'plan-and-plant']},
+        {title: 'Containers', slugs: ['grow-in-containers', 'plan-and-plant']},
+      ];
+      const starters = [];
+      const paths = element('div', 'pw-start-paths');
+      starterPaths.forEach(path => {
+        const section = element('section', 'pw-start-path');
+        section.append(element('h3', '', path.title));
+        const steps = element('ol', 'pw-start-list');
+        path.slugs.forEach(slug => {
+          const item = tutorials.find(item => pageKey(new URL(item.url)).endsWith('/' + slug));
+          if (!item) return;
+          starters.push(item);
+          const row = element('li');
+          row.append(link(item.url, item.title, 'pw-start-link')); steps.append(row);
+        });
+        section.append(steps); paths.append(section);
       });
-      const steps = element('ol', 'pw-start-list');
-      starters.forEach(item => { const row = element('li'); row.append(link(item.url, item.title, 'pw-start-link')); steps.append(row); });
-      intro.append(steps); intro.hidden = !starters.length;
+      intro.append(paths); intro.hidden = !starters.length;
       const browse = element('section', 'pw-browse');
       const browseTitle = element('h2', '', 'Browse by topic'); browseTitle.id = 'pw-browse-heading';
       browse.setAttribute('aria-labelledby', browseTitle.id); browse.append(browseTitle);
@@ -327,7 +364,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <h1 class="blog-post-title">Understand your garden’s guidance</h1>
             <div class="blog-post-meta">
               <p class="blog-post-meta-item">Nov 12, 2026</p>
-              <p class="blog-post-meta-item">3 min read</p>
+              <p class="blog-post-meta-item">7 min read</p>
             </div>
             <div class="blog-tag-list">
               <span class="blog-tag">Schedule &amp; guidance</span>
@@ -351,20 +388,69 @@ document.addEventListener('DOMContentLoaded', () => {
               <p><strong>Almanac → Today</strong> gathers attention items, upcoming plantings, active schedule windows, and recent journal entries across your garden. <strong>Plan plotted plants</strong> brings together plants that still need a method and date, organized by growing space. Open a relevant planting or growing space for its detailed Guide.</p>
               <h2>What shapes the advice?</h2>
               <p>Plotwise uses the plant’s details, your chosen planting method and date, location-based climate and weather, sunlight, and the plant’s stage in its lifecycle to provide guidance. The chosen variety and available space also help shape the advice.</p>
-              <h2>What the guidance covers</h2>
+              <h2>Get to know the Guide sections</h2>
+              <p>The sections change with your selection, planting details, and growing conditions. Here is what each one helps you understand.</p>
+              <h3>About</h3>
+              <p>A short introduction to the plant while you’re plotting it. Tap the heading to open its plant information.</p>
+              <h3>Plotted, Planned, and Planted</h3>
+              <p>When a planting is selected, this section shows its progress. <strong>Plotted</strong> means you’ve chosen its space. <strong>Planned</strong> means you’ve saved a planting method and date. <strong>Planted</strong> means you’ve confirmed when it began growing there.</p>
+              <p>Use <strong>Edit plan</strong> to choose or change the planned method and date. Once the plan is saved, use <strong>Plant</strong> to record the actual planting. Estimated timing appears here when available, including the kind of growing window that applies to the plant.</p>
+              <h3>Planting</h3>
+              <p>Practical guidance before planting, such as spacing, seed depth, or how the plant is usually started. The advice can change with the chosen planting method.</p>
+              <h3>Layout</h3>
+              <p>An overview of occupied and available space. In a bed, it describes the squares in use and larger planting footprints. In a container group, it summarizes how the containers are being used.</p>
+              <h3>Space &amp; growth</h3>
+              <p>Guidance about mature size, spreading or climbing growth, and supports to prepare or maintain. In containers, it can also flag plants that may need more room.</p>
+              <p>Follow <strong>Explore supports</strong> when offered. Support guides in <strong>Garden Supplies</strong> explain options such as stakes, cages, and trellises and help you choose one suited to your plants.</p>
+              <h3>Sun</h3>
+              <p>How the available sunlight suits your plants. In beds, it can also describe shade that taller plants may cast on their neighbors. While plotting, it helps you choose a spot; after plotting, it can highlight a poor light fit or a shading concern.</p>
+              <h3>Climate</h3>
+              <p>How your location, planting method, and date fit the season. Before planting, this can include suggested dates or a warning about seasonal timing. After planting, advice focuses on the conditions your plants may face, such as cold or heat.</p>
+              <h3>Moisture</h3>
+              <p>Watering considerations based on the plants and available weather information. Advice may call attention to a dry stretch, recent rain, heavy rain ahead, or containers that can dry out quickly.</p>
+              <h3>Companions</h3>
+              <p>Relationships between neighboring plants, including potential benefits and combinations that need attention. While plotting in a bed, you can highlight related plants to help choose their positions. See the companion instructions below.</p>
+              <h3>Health</h3>
+              <p>Common pests, diseases, disorders, and symptoms worth checking for the plants you’re growing.</p>
+              <p>Follow <strong>Explore health guides</strong> when offered. The Garden Health guide is a reference to help you prepare for or investigate health-related issues that may arise in your garden.</p>
+              <h3>Growth</h3>
+              <p>Changes in how a plant develops, such as cool-season greens starting to bolt in warm conditions. This advice can help you decide what to watch for or harvest as the plant changes.</p>
+              <h3>Harvest</h3>
+              <p>Harvest timing and signs to check on the plant itself, such as the size or appearance of the part you’ll pick. Depending on the plant and its stage, it can describe an upcoming window, current production, or what to check after an estimated window has passed.</p>
+              <h3>Succession</h3>
+              <p>Guidance for growing another planting in the same space. Across a bed or container group, it can describe differences in when plantings are expected to finish. For a selected planting with a suitable timing estimate, it offers controls to add and review the next plantings.</p>
+              <p>Follow <a href="help/plan-what-grows-next/index.html">Plan what grows next</a> for the full walkthrough.</p>
+              <p>Tap an explanatory guidance heading for more detail about that section.</p>
+              <div class="pw-tutorial-examples" style="display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:center;gap:1.5rem;"> 
+                <figure class="pw-tutorial-figure" style="width:100%;max-width:280px;margin:1.5rem auto;"> 
+                  <a href="images/screenshots/guide-01-overview-framed.png"><img src="images/screenshots/guide-01-overview-framed.png" alt="Backyard bed with Layout, a bold-plant-name tutorial, and Health guidance." loading="lazy" style="display:block;width:100%;height:auto;" /></a> 
+                  <figcaption>
+                    <strong>Whole bed:</strong> The bed Guide combines layout information and advice for its plants.
+                  </figcaption> 
+                </figure> 
+                <figure class="pw-tutorial-figure" style="width:100%;max-width:280px;margin:1.5rem auto;"> 
+                  <a href="images/screenshots/guide-03-selected-guidance-framed.png"><img src="images/screenshots/guide-03-selected-guidance-framed.png" alt="Selected Garlic with Space and growth, Health and Harvest guidance." loading="lazy" style="display:block;width:100%;height:auto;" /></a> 
+                  <figcaption>
+                    <strong>Selected plant:</strong> Select a plant to see guidance for that planting.
+                  </figcaption> 
+                </figure> 
+              </div> 
+              <!-- MEDIA: guidance-container-selected — Container group: show the group Guide, a selected container, then a selected planting. Label the three scopes and use only crops needed to explain the difference. --> 
+              <!-- ICON: Guide sections — use the actual heading symbols beside these explanations in a later illustration pass. --> 
+              <h2>Extra guidance for containers</h2>
+              <p>Select a container to see its plantings and available room.</p>
               <ul>
-                <li><strong>Layout:</strong> How much space is occupied, and what is still available?</li>
-                <li><strong>Sun:</strong> Does the recorded light suit the plants, and might taller neighbors shade them?</li>
-                <li><strong>Space &amp; growth:</strong> What does mature size, spreading or climbing growth, or support mean for this planting?</li>
-                <li><strong>Climate:</strong> How might seasonal heat, cold, and planting timing affect it?</li>
-                <li><strong>Moisture:</strong> Do recent or forecast conditions call for a closer look at the soil or plant?</li>
-                <li><strong>Companions:</strong> Which nearby plants may help each other, and which combinations need attention?</li>
-                <li><strong>Health:</strong> Which pests, diseases, disorders, or symptoms are worth knowing about?</li>
-                <li><strong>Succession:</strong> What should you consider before reusing the space?</li>
+                <li><strong>Space:</strong> General guidance about choosing containers with enough room for roots and moisture, shown when the group is empty.</li>
+                <li><strong>Open spaces:</strong> How many planting spaces remain available in the selected container.</li>
+                <li><strong>Container size:</strong> A warning when a planting may need a larger container for strong root growth.</li>
+                <li><strong>Won’t fit:</strong> An explanation when an attempted planting cannot fit in the chosen container.</li>
+                <li><strong>Sun:</strong> Advice about the selected container’s recorded light level and the plants growing in it.</li>
               </ul>
-              <p>Tap a guidance heading for its explanation. Follow <strong>Explore health guides</strong> or <strong>Explore supports</strong> when offered for more detail.</p>
-              <p>The Garden Health guide is a reference to help you prepare for or investigate health-related issues that may arise in your garden. Support guides in <strong>Garden Supplies</strong> explain the supports available and help you choose one suited to your plants.</p>
-              <!-- MEDIA: guidance-overview-selected — Pair a whole-bed Guide with the same plant selected, showing how the focus changes. --> 
+              <!-- MEDIA: container-guidance — Show a selected container with its named spaces and a useful size or sunlight example. --> 
+              <h2>Guidance while changing your layout</h2>
+              <p>In <strong>Sun Map</strong>, <strong>Full sun</strong>, <strong>Part sun</strong>, or <strong>Shade</strong> describes the light level you’re applying. The Sun guidance below can show how that choice affects existing plants. Follow <a href="help/map-sunlight-and-set-north/index.html">Sun Map</a> for light levels and compass instructions.</p>
+              <p>While plotting, brief instructions explain the gesture or why a plant cannot fit in a particular spot. In <strong>Separate plants</strong>, <strong>Minimum size</strong> and <strong>Minimum shape</strong> show whether the selected squares meet the plant’s footprint requirements. Follow <a href="help/group-plants/index.html">Manage several squares as one planting</a> for grouping and separating.</p>
+              <p>When a planting is selected, its removal control appears below its guidance. Follow <a href="help/move-and-remove-plantings/index.html">Move and remove plantings</a> to clear it from the space and record what happened.</p>
               <h2>Choose companions while plotting</h2>
               <p>Companions are useful neighbors. They may attract helpful insects, provide support, cover soil, or make better use of the space. The guidance explains the relationship and any conditions or cautions to consider.</p>
               <p>When <strong>Companions</strong> appears while plotting in a bed, tap its heading and turn on <strong>Highlight companions</strong> to locate related plants. Read the accompanying advice to understand how those plants may affect one another.</p>
@@ -377,7 +463,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <!-- ICON: Plant reference tutorial — reuse the in-app gesture hint symbol only if a graphic is needed; bold text itself is the target. --> 
               <h2>Related tutorials</h2>
               <ul>
-                <li><a href="help/map-sunlight-and-set-north/index.html">Map sunlight and set north</a></li>
+                <li><a href="help/map-sunlight-and-set-north/index.html">Sun Map</a></li>
                 <li><a href="help/understand-your-schedule/index.html">Understand planting dates and your schedule</a></li>
                 <li><a href="help/choose-varieties-and-use-catalogs/index.html">Choose varieties and use the catalogs</a></li>
               </ul>

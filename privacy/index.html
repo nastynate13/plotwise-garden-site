@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const normalize = text => text.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   const topics = [
     {id: 'beds-containers', title: 'Beds & containers', description: 'Set up your growing spaces and make room for your plants.'},
-    {id: 'planning-planting', title: 'Planning & planting', description: 'Choose planting dates, manage groups, and plan what comes next.'},
+    {id: 'planning-planting', title: 'Plotting, Planning, and Planting', description: 'Plot your space, plan planting dates, and grow through the season.'},
     {id: 'schedule-guidance', title: 'Schedule & guidance', description: 'Read your schedule and understand your garden’s guidance.'},
     {id: 'journal-history', title: 'Journal & history', description: 'Record what happens and revisit your garden over time.'},
     {id: 'catalogs-identification', title: 'Catalogs & photo identification', description: 'Explore plants and guides, and investigate what you’ve spotted.'},
@@ -73,6 +73,31 @@ document.addEventListener('DOMContentLoaded', () => {
     return node;
   };
   const topicPath = topic => `help/index.html?topic=${encodeURIComponent(topic.id)}`;
+  // Stable tutorial sequence, independent of edit/publish dates. Unlisted new
+  // articles retain Kickstart's order after the curated sequence in each topic.
+  const tutorialOrder = ['create-your-first-bed', 'grow-in-containers', 'map-sunlight-and-set-north',
+    'plan-and-plant', 'plan-what-grows-next', 'move-and-remove-plantings', 'group-plants'];
+  const tutorialRank = item => {
+    const rank = tutorialOrder.findIndex(slug => pageKey(new URL(item.url)).endsWith('/' + slug));
+    return rank < 0 ? tutorialOrder.length : rank;
+  };
+  // Stable routes preserve categories when Kickstart previews mix cached article
+  // tags with freshly saved navigation, or a topic display name changes.
+  const topicBySlug = {
+    'create-your-first-bed': 'beds-containers', 'grow-in-containers': 'beds-containers',
+    'map-sunlight-and-set-north': 'beds-containers',
+    'plan-and-plant': 'planning-planting', 'plan-what-grows-next': 'planning-planting',
+    'move-and-remove-plantings': 'planning-planting', 'group-plants': 'planning-planting',
+    'understand-your-schedule': 'schedule-guidance', 'understand-garden-guidance': 'schedule-guidance',
+    'journal-and-history': 'journal-history', 'identify-a-photo': 'catalogs-identification',
+    'choose-varieties-and-use-catalogs': 'catalogs-identification', 'join-community': 'community',
+  };
+  const resolveTopic = (tags, url) => {
+    const tagged = topics.find(t => tags.includes(t.title));
+    if (tagged) return tagged;
+    const slug = pageKey(url).split('/').at(-1);
+    return topics.find(t => t.id === topicBySlug[slug]) || topics.at(-1);
+  };
   const readItems = doc => Array.from(doc.querySelectorAll('.blog-card')).flatMap(card => {
     const title = card.querySelector('.blog-card-title');
     if (!title) return [];
@@ -80,11 +105,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const tags = Array.from(card.querySelectorAll('.blog-tag'), tag => tag.textContent.trim());
     return [{title: title.textContent.trim(), url: url.href,
       summary: card.querySelector('.blog-card-summary')?.textContent.trim() || '', tags,
-      topic: topics.find(t => tags.includes(t.title)) || topics.at(-1), resource: resourceFor(url)}];
-  });
+      topic: resolveTopic(tags, url), resource: resourceFor(url)}];
+  }).sort((a, b) => tutorialRank(a) - tutorialRank(b));
   const topicOfPage = () => {
     const tags = Array.from(document.querySelectorAll('.blog-article-page > .blog-tag-list .blog-tag'), e => e.textContent.trim());
-    return topics.find(t => tags.includes(t.title)) || topics.at(-1);
+    return resolveTopic(tags, pageURL);
   };
   const tutorialRow = item => {
     const row = element('li');
@@ -133,15 +158,27 @@ document.addEventListener('DOMContentLoaded', () => {
       const intro = element('section', 'pw-start');
       intro.setAttribute('aria-labelledby', 'pw-start-heading');
       const introTitle = element('h2', '', 'Start here'); introTitle.id = 'pw-start-heading';
-      intro.append(introTitle, element('p', 'pw-muted', 'Create a growing space, then make your first planting plan.'));
-      const firstSteps = ['create-your-first-bed', 'plan-and-plant'];
-      const starters = tutorials.filter(item => item.tags.includes('Start here')).sort((a, b) => {
-        const rank = item => {const n = firstSteps.findIndex(slug => pageKey(new URL(item.url)).endsWith('/' + slug)); return n < 0 ? 999 : n;};
-        return rank(a) - rank(b);
+      intro.append(introTitle, element('p', 'pw-muted', 'Create a growing space, then plot and plan your first planting.'));
+      const starterPaths = [
+        {title: 'Beds', slugs: ['create-your-first-bed', 'plan-and-plant']},
+        {title: 'Containers', slugs: ['grow-in-containers', 'plan-and-plant']},
+      ];
+      const starters = [];
+      const paths = element('div', 'pw-start-paths');
+      starterPaths.forEach(path => {
+        const section = element('section', 'pw-start-path');
+        section.append(element('h3', '', path.title));
+        const steps = element('ol', 'pw-start-list');
+        path.slugs.forEach(slug => {
+          const item = tutorials.find(item => pageKey(new URL(item.url)).endsWith('/' + slug));
+          if (!item) return;
+          starters.push(item);
+          const row = element('li');
+          row.append(link(item.url, item.title, 'pw-start-link')); steps.append(row);
+        });
+        section.append(steps); paths.append(section);
       });
-      const steps = element('ol', 'pw-start-list');
-      starters.forEach(item => { const row = element('li'); row.append(link(item.url, item.title, 'pw-start-link')); steps.append(row); });
-      intro.append(steps); intro.hidden = !starters.length;
+      intro.append(paths); intro.hidden = !starters.length;
       const browse = element('section', 'pw-browse');
       const browseTitle = element('h2', '', 'Browse by topic'); browseTitle.id = 'pw-browse-heading';
       browse.setAttribute('aria-labelledby', browseTitle.id); browse.append(browseTitle);

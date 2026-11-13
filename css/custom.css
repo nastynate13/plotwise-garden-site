@@ -86,7 +86,9 @@ a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visibl
 .pw-muted { color: var(--pw-muted); line-height: 1.6; }
 .pw-start, .pw-browse, .pw-results { margin-bottom: 2.5rem; }
 .pw-start { border: 1px solid var(--pw-line); background: var(--pw-card); border-radius: 1.25rem; padding: clamp(1.2rem, 3vw, 2rem); }
-.pw-start-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem 2rem; list-style: none; padding: 0; margin: 1rem 0 0; counter-reset: start-step; }
+.pw-start-paths { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem 2rem; }
+.pw-start-path h3 { margin-bottom: .25rem; }
+.pw-start-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: .5rem 2rem; list-style: none; padding: 0; margin: 1rem 0 0; counter-reset: start-step; }
 .pw-start-list li { counter-increment: start-step; display: flex; align-items: baseline; gap: .8rem; }
 .pw-start-list li::before { content: counter(start-step); font-weight: 700; color: var(--pw-accent); }
 .pw-start-link { padding-block: .75rem; color: var(--pw-accent); font-weight: 650; text-underline-offset: .2em; }
@@ -133,7 +135,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visibl
   .pw-help-nav { position: static; max-height: none; }
   .pw-article-main { max-width: none; }
 }
-@media (max-width: 700px) { .pw-topic-grid, .pw-start-list { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 700px) { .pw-topic-grid, .pw-start-paths { grid-template-columns: minmax(0, 1fr); } }
 
 /* Keep imported tutorial assets in Kickstart, without featuring the gallery on the homepage.
    Remove this rule when a curated homepage screenshot set is ready. */

@@ -3,8 +3,8 @@
   <head>
     <base href="../../" />
     <meta property="og:site_name" content="Plotwise Garden" />
-    <meta property="og:title" content="Plan a planting and mark it as planted" />
-    <meta name="twitter:title" content="Plan a planting and mark it as planted" />
+    <meta property="og:title" content="Plot, Plan, and Plant" />
+    <meta name="twitter:title" content="Plot, Plan, and Plant" />
     <meta property="og:description" content="Plot a space for a plant, choose how and when you intend to grow it, then record the actual planting date when it begins growing in your bed or container." />
     <meta name="twitter:description" content="Plot a space for a plant, choose how and when you intend to grow it, then record the actual planting date when it begins growing in your bed or container." />
     <meta property="og:url" content="https://plotwisegarden.com/help/plan-and-plant" />
@@ -15,7 +15,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="Plot a space for a plant, choose how and when you intend to grow it, then record the actual planting date when it begins growing in your bed or container." />
     <meta name="generator" content="Ignite v0.6.9" />
-    <title>Plan a planting and mark it as planted - Plotwise Garden</title>
+    <title>Plot, Plan, and Plant - Plotwise Garden</title>
     <link href="css/bootstrap.min.css" rel="stylesheet" />
     <link href="css/bootstrap-icons.min.css" rel="stylesheet" />
     <link href="css/ignite-core.min.css" rel="stylesheet" />
@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const normalize = text => text.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   const topics = [
     {id: 'beds-containers', title: 'Beds & containers', description: 'Set up your growing spaces and make room for your plants.'},
-    {id: 'planning-planting', title: 'Planning & planting', description: 'Choose planting dates, manage groups, and plan what comes next.'},
+    {id: 'planning-planting', title: 'Plotting, Planning, and Planting', description: 'Plot your space, plan planting dates, and grow through the season.'},
     {id: 'schedule-guidance', title: 'Schedule & guidance', description: 'Read your schedule and understand your garden’s guidance.'},
     {id: 'journal-history', title: 'Journal & history', description: 'Record what happens and revisit your garden over time.'},
     {id: 'catalogs-identification', title: 'Catalogs & photo identification', description: 'Explore plants and guides, and investigate what you’ve spotted.'},
@@ -76,6 +76,31 @@ document.addEventListener('DOMContentLoaded', () => {
     return node;
   };
   const topicPath = topic => `help/index.html?topic=${encodeURIComponent(topic.id)}`;
+  // Stable tutorial sequence, independent of edit/publish dates. Unlisted new
+  // articles retain Kickstart's order after the curated sequence in each topic.
+  const tutorialOrder = ['create-your-first-bed', 'grow-in-containers', 'map-sunlight-and-set-north',
+    'plan-and-plant', 'plan-what-grows-next', 'move-and-remove-plantings', 'group-plants'];
+  const tutorialRank = item => {
+    const rank = tutorialOrder.findIndex(slug => pageKey(new URL(item.url)).endsWith('/' + slug));
+    return rank < 0 ? tutorialOrder.length : rank;
+  };
+  // Stable routes preserve categories when Kickstart previews mix cached article
+  // tags with freshly saved navigation, or a topic display name changes.
+  const topicBySlug = {
+    'create-your-first-bed': 'beds-containers', 'grow-in-containers': 'beds-containers',
+    'map-sunlight-and-set-north': 'beds-containers',
+    'plan-and-plant': 'planning-planting', 'plan-what-grows-next': 'planning-planting',
+    'move-and-remove-plantings': 'planning-planting', 'group-plants': 'planning-planting',
+    'understand-your-schedule': 'schedule-guidance', 'understand-garden-guidance': 'schedule-guidance',
+    'journal-and-history': 'journal-history', 'identify-a-photo': 'catalogs-identification',
+    'choose-varieties-and-use-catalogs': 'catalogs-identification', 'join-community': 'community',
+  };
+  const resolveTopic = (tags, url) => {
+    const tagged = topics.find(t => tags.includes(t.title));
+    if (tagged) return tagged;
+    const slug = pageKey(url).split('/').at(-1);
+    return topics.find(t => t.id === topicBySlug[slug]) || topics.at(-1);
+  };
   const readItems = doc => Array.from(doc.querySelectorAll('.blog-card')).flatMap(card => {
     const title = card.querySelector('.blog-card-title');
     if (!title) return [];
@@ -83,11 +108,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const tags = Array.from(card.querySelectorAll('.blog-tag'), tag => tag.textContent.trim());
     return [{title: title.textContent.trim(), url: url.href,
       summary: card.querySelector('.blog-card-summary')?.textContent.trim() || '', tags,
-      topic: topics.find(t => tags.includes(t.title)) || topics.at(-1), resource: resourceFor(url)}];
-  });
+      topic: resolveTopic(tags, url), resource: resourceFor(url)}];
+  }).sort((a, b) => tutorialRank(a) - tutorialRank(b));
   const topicOfPage = () => {
     const tags = Array.from(document.querySelectorAll('.blog-article-page > .blog-tag-list .blog-tag'), e => e.textContent.trim());
-    return topics.find(t => tags.includes(t.title)) || topics.at(-1);
+    return resolveTopic(tags, pageURL);
   };
   const tutorialRow = item => {
     const row = element('li');
@@ -136,15 +161,27 @@ document.addEventListener('DOMContentLoaded', () => {
       const intro = element('section', 'pw-start');
       intro.setAttribute('aria-labelledby', 'pw-start-heading');
       const introTitle = element('h2', '', 'Start here'); introTitle.id = 'pw-start-heading';
-      intro.append(introTitle, element('p', 'pw-muted', 'Create a growing space, then make your first planting plan.'));
-      const firstSteps = ['create-your-first-bed', 'plan-and-plant'];
-      const starters = tutorials.filter(item => item.tags.includes('Start here')).sort((a, b) => {
-        const rank = item => {const n = firstSteps.findIndex(slug => pageKey(new URL(item.url)).endsWith('/' + slug)); return n < 0 ? 999 : n;};
-        return rank(a) - rank(b);
+      intro.append(introTitle, element('p', 'pw-muted', 'Create a growing space, then plot and plan your first planting.'));
+      const starterPaths = [
+        {title: 'Beds', slugs: ['create-your-first-bed', 'plan-and-plant']},
+        {title: 'Containers', slugs: ['grow-in-containers', 'plan-and-plant']},
+      ];
+      const starters = [];
+      const paths = element('div', 'pw-start-paths');
+      starterPaths.forEach(path => {
+        const section = element('section', 'pw-start-path');
+        section.append(element('h3', '', path.title));
+        const steps = element('ol', 'pw-start-list');
+        path.slugs.forEach(slug => {
+          const item = tutorials.find(item => pageKey(new URL(item.url)).endsWith('/' + slug));
+          if (!item) return;
+          starters.push(item);
+          const row = element('li');
+          row.append(link(item.url, item.title, 'pw-start-link')); steps.append(row);
+        });
+        section.append(steps); paths.append(section);
       });
-      const steps = element('ol', 'pw-start-list');
-      starters.forEach(item => { const row = element('li'); row.append(link(item.url, item.title, 'pw-start-link')); steps.append(row); });
-      intro.append(steps); intro.hidden = !starters.length;
+      intro.append(paths); intro.hidden = !starters.length;
       const browse = element('section', 'pw-browse');
       const browseTitle = element('h2', '', 'Browse by topic'); browseTitle.id = 'pw-browse-heading';
       browse.setAttribute('aria-labelledby', browseTitle.id); browse.append(browseTitle);
@@ -324,13 +361,15 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="blog-post-page">
           <div class="container blog-article-page">
             <a href="help/" class="blog-back-link">Back to Blog</a>
-            <h1 class="blog-post-title">Plan a planting and mark it as planted</h1>
+            <h1 class="blog-post-title">Plot, Plan, and Plant</h1>
             <div class="blog-post-meta">
               <p class="blog-post-meta-item">Nov 12, 2026</p>
-              <p class="blog-post-meta-item">4 min read</p>
+              <p class="blog-post-meta-item">6 min read</p>
             </div>
             <div class="blog-tag-list">
-              <span class="blog-tag">Planning &amp; planting</span>
+              <span class="blog-tag">Plotting</span>
+              <span class="blog-tag">Planning</span>
+              <span class="blog-tag">and Planting</span>
               <span class="blog-tag">Start here</span>
               <span class="blog-tag">Planting dates</span>
               <span class="blog-tag">Seeds</span>
@@ -346,31 +385,62 @@ document.addEventListener('DOMContentLoaded', () => {
               <p><strong>Planned:</strong> You’ve saved a planting method and date.</p>
               <p><strong>Planted:</strong> You’ve confirmed that the plant is growing in its space and recorded the actual planting date.</p>
               <h2>1. Choose a plant and variety</h2>
-              <p>Open a bed or container group and tap the <strong>plus (+)</strong> button. Browse the plant catalog or search for a plant.</p>
-              <p>If you know the variety you’re growing, choose it from the plant’s variety options. You can browse more varieties or add a custom variety there too. You can also start with the general plant.</p>
-              <h2>2. Plot its space</h2>
-              <p>In a bed, tap squares to add a single-square plant. For a plant with a larger minimum footprint, long press and drag across enough squares. In a container group, choose an available space in a suitable container.</p>
-              <p>Tap the <strong>checkmark (✓)</strong> when you’re done. This saves its position as a <strong>Plotted</strong> planting.</p>
-              <p>When <strong>Companions</strong> appears in the Guide, open its heading and use <strong>Highlight companions</strong> to see related plants in the bed. <a href="help/understand-garden-guidance/index.html">Learn about companion guidance</a>.</p>
-              <p>Want several squares to share one plan? Turn on <strong>Group plants</strong> while plotting them in a bed. <a href="help/group-plants/index.html">Learn how grouping works</a>.</p>
-              <figure class="pw-tutorial-figure" style="max-width:280px;margin:1.5rem auto;"> 
-                <a href="images/screenshots/plan-plant-01-reserved-framed.png"><img src="images/screenshots/plan-plant-01-reserved-framed.png" alt="Garlic selected in Backyard bed, with Edit plan available and Plant disabled." loading="lazy" style="display:block;width:100%;height:auto;" /></a> 
+              <h3>In a bed</h3>
+              <p>Open the bed and tap <strong>plus (+)</strong>. Browse the plant catalog or search for a plant.</p>
+              <h3>In a container group</h3>
+              <p>Select the container you want to grow in, then tap <strong>plus (+)</strong> to choose a plant for an open space. The catalog initially shows plants that fit that container.</p>
+              <figure class="pw-tutorial-figure" style="width:100%;max-width:280px;margin:1.5rem auto;"> 
+                <a href="images/screenshots/container-02-selected-framed.png"><img src="images/screenshots/container-02-selected-framed.png" alt="Terracotta pot selected in Patio pots with two open planting spaces and the Add plant control." loading="lazy" style="display:block;width:100%;height:auto;" /></a> 
                 <figcaption>
-                  Reserve the space first. Choose a method and date when you’re ready.
+                  <strong>Container group:</strong> Select a container, then use + to choose a plant.
                 </figcaption> 
               </figure> 
+              <h3>Choose a variety</h3>
+              <p>If you know the variety you’re growing, choose it from the plant’s variety options. You can browse more varieties or add a custom variety there too. You can also start with the general plant.</p>
+              <h2>2. Plot its space</h2>
+              <h3>In a bed</h3>
+              <p>Tap squares to add a single-square plant. For a plant with a larger minimum footprint, long press and drag across enough squares.</p>
+              <p>Tap the <strong>checkmark (✓)</strong> when you’re done. This saves its position as a <strong>Plotted</strong> planting.</p>
+              <figure class="pw-tutorial-figure" style="width:100%;max-width:280px;margin:1.5rem auto;"> 
+                <a href="images/screenshots/plan-plant-01-reserved-framed.png"><img src="images/screenshots/plan-plant-01-reserved-framed.png" alt="Garlic plotted in a bed with Edit plan available." loading="lazy" style="display:block;width:100%;height:auto;" /></a> 
+                <figcaption>
+                  <strong>Bed:</strong> Plot the space before choosing a planting date.
+                </figcaption> 
+              </figure> 
+              <!-- MEDIA: bed-large-footprint — Capture the long-press and drag gesture for a larger planting. --> 
+              <h3>In a container group</h3>
+              <p>Choosing the plant adds it to an available space in the selected container as a <strong>Plotted</strong> planting. Its details open so you can save a plan now or return to it later.</p>
+              <figure class="pw-tutorial-figure" style="width:100%;max-width:280px;margin:1.5rem auto;"> 
+                <a href="images/screenshots/container-03-plotted-framed.png"><img src="images/screenshots/container-03-plotted-framed.png" alt="Garlic plotted in Terracotta pot with Edit plan available." loading="lazy" style="display:block;width:100%;height:auto;" /></a> 
+                <figcaption>
+                  <strong>Container group:</strong> The plant is plotted as soon as you choose it for the container.
+                </figcaption> 
+              </figure> 
+              <h3>While plotting in a bed</h3>
+              <p>When <strong>Companions</strong> appears in the Guide, open its heading and use <strong>Highlight companions</strong> to see related plants in the bed. <a href="help/understand-garden-guidance/index.html">Learn about companion guidance</a>.</p>
+              <p>Want several squares to share one plan? Turn on <strong>Group plants</strong> while plotting them in a bed. <a href="help/group-plants/index.html">Learn how grouping works</a>.</p>
               <h2>3. Save the planting method and date</h2>
-              <p>Select the plant in your bed or container, then tap <strong>Edit plan</strong> in its details.</p>
+              <p><strong>In a bed:</strong> tap the planting’s squares to select it.</p>
+              <p><strong>In a container group:</strong> select the container, then choose the planting from its list.</p>
+              <p>Tap <strong>Edit plan</strong> in the planting’s details.</p>
               <p>Choose the planting method you intend to use and the date you expect to plant in that space. The available methods depend on the plant. For example, garlic can use <strong>Clove</strong>, while other plants may offer <strong>Seed</strong> or <strong>Transplant</strong>.</p>
               <p>For a transplant, use the date the young plant will move into this bed or container, rather than the date its seed was started elsewhere.</p>
               <p>Plotwise may offer a suggested date. Review it along with any timing guidance, make adjustments, and tap <strong>Save</strong>. The planting now shows <strong>Planned</strong>.</p>
               <p>You can return to Edit plan if your plans change.</p>
-              <figure class="pw-tutorial-figure" style="max-width:280px;margin:1.5rem auto;"> 
-                <a href="images/screenshots/plan-plant-02-edit-plan-framed.png"><img src="images/screenshots/plan-plant-02-edit-plan-framed.png" alt="Edit plan showing the Clove method, a suggested planting date, and an estimated harvest window." loading="lazy" style="display:block;width:100%;height:auto;" /></a> 
-                <figcaption>
-                  Review the planting method and suggested date, then save your plan.
-                </figcaption> 
-              </figure> 
+              <div class="pw-tutorial-examples" style="display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:center;gap:1.5rem;"> 
+                <figure class="pw-tutorial-figure" style="width:100%;max-width:280px;margin:1.5rem auto;"> 
+                  <a href="images/screenshots/plan-plant-02-edit-plan-framed.png"><img src="images/screenshots/plan-plant-02-edit-plan-framed.png" alt="Edit plan sheet for Garlic in Backyard bed." loading="lazy" style="display:block;width:100%;height:auto;" /></a> 
+                  <figcaption>
+                    <strong>Bed:</strong> Choose a planting method and save the planned date.
+                  </figcaption> 
+                </figure> 
+                <figure class="pw-tutorial-figure" style="width:100%;max-width:280px;margin:1.5rem auto;"> 
+                  <a href="images/screenshots/container-04-edit-plan-framed.png"><img src="images/screenshots/container-04-edit-plan-framed.png" alt="Edit plan sheet for Garlic showing Clove and a suggested planting date." loading="lazy" style="display:block;width:100%;height:auto;" /></a> 
+                  <figcaption>
+                    <strong>Container group:</strong> Save the planting method and date for this container planting.
+                  </figcaption> 
+                </figure> 
+              </div> 
               <h2>4. Confirm when you plant</h2>
               <p>Once you’ve saved the plan, the <strong>Plant</strong> button becomes available. When you sow, transplant, or otherwise start the plant in its space:</p>
               <ol>
@@ -380,12 +450,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 <li>Tap the <strong>Plant</strong> button at the bottom to confirm.</li>
               </ol>
               <p>If it was already planted, enter the actual earlier date.</p>
-              <figure class="pw-tutorial-figure" style="max-width:280px;margin:1.5rem auto;"> 
-                <a href="images/screenshots/plan-plant-05-planted-framed.png"><img src="images/screenshots/plan-plant-05-planted-framed.png" alt="The planted Garlic card showing its actual planting date and estimated harvest window." loading="lazy" style="display:block;width:100%;height:auto;" /></a> 
+              <figure class="pw-tutorial-figure" style="width:100%;max-width:280px;margin:1.5rem auto;"> 
+                <a href="images/screenshots/plan-plant-04-confirm-planting-framed.png"><img src="images/screenshots/plan-plant-04-confirm-planting-framed.png" alt="Plant Garlic sheet with actual planting date and optional journal entry." loading="lazy" style="display:block;width:100%;height:auto;" /></a> 
                 <figcaption>
-                  After you confirm planting, Plotwise records the actual date and shows what’s ahead.
+                  Confirm the actual planting date, and add a note if you wish.
                 </figcaption> 
               </figure> 
+              <div class="pw-tutorial-examples" style="display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:center;gap:1.5rem;"> 
+                <figure class="pw-tutorial-figure" style="width:100%;max-width:280px;margin:1.5rem auto;"> 
+                  <a href="images/screenshots/plan-plant-05-planted-framed.png"><img src="images/screenshots/plan-plant-05-planted-framed.png" alt="Garlic marked Planted in Backyard bed." loading="lazy" style="display:block;width:100%;height:auto;" /></a> 
+                  <figcaption>
+                    <strong>Bed:</strong> The planting now appears as Planted in the bed.
+                  </figcaption> 
+                </figure> 
+                <figure class="pw-tutorial-figure" style="width:100%;max-width:280px;margin:1.5rem auto;"> 
+                  <a href="images/screenshots/container-07-planted-framed.png"><img src="images/screenshots/container-07-planted-framed.png" alt="Garlic in Terracotta pot marked Planted with its planting date and estimated harvest window." loading="lazy" style="display:block;width:100%;height:auto;" /></a> 
+                  <figcaption>
+                    <strong>Container group:</strong> Confirming planting records when it began growing in the container.
+                  </figcaption> 
+                </figure> 
+              </div> 
               <h2>5. Follow it on the schedule</h2>
               <p>Open <strong>Schedule</strong> for that growing space, or use <strong>Almanac → Schedule</strong> to see plantings across your garden.</p>
               <p>Planting dates and estimated growing or harvest windows help you see what’s ahead. These are estimates: variety, weather, planting method, and the plant’s actual progress can change when it’s ready.</p>
@@ -398,7 +482,8 @@ document.addEventListener('DOMContentLoaded', () => {
               <p>No. Use Plant to confirm what happened in your garden.</p>
               <h2>Related tutorials</h2>
               <ul>
-                <li><a href="help/create-your-first-bed/index.html">Create your first bed</a></li>
+                <li><a href="help/create-your-first-bed/index.html">Create your bed</a></li>
+                <li><a href="help/grow-in-containers/index.html">Create your container group</a></li>
                 <li><a href="help/group-plants/index.html">Manage several squares as one planting</a></li>
                 <li><a href="help/understand-your-schedule/index.html">Understand planting dates and your schedule</a></li>
                 <li><a href="help/choose-varieties-and-use-catalogs/index.html">Choose varieties and use the catalogs</a></li>

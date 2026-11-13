@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const normalize = text => text.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   const topics = [
     {id: 'beds-containers', title: 'Beds & containers', description: 'Set up your growing spaces and make room for your plants.'},
-    {id: 'planning-planting', title: 'Planning & planting', description: 'Choose planting dates, manage groups, and plan what comes next.'},
+    {id: 'planning-planting', title: 'Plotting, Planning, and Planting', description: 'Plot your space, plan planting dates, and grow through the season.'},
     {id: 'schedule-guidance', title: 'Schedule & guidance', description: 'Read your schedule and understand your garden’s guidance.'},
     {id: 'journal-history', title: 'Journal & history', description: 'Record what happens and revisit your garden over time.'},
     {id: 'catalogs-identification', title: 'Catalogs & photo identification', description: 'Explore plants and guides, and investigate what you’ve spotted.'},
@@ -76,6 +76,31 @@ document.addEventListener('DOMContentLoaded', () => {
     return node;
   };
   const topicPath = topic => `help/index.html?topic=${encodeURIComponent(topic.id)}`;
+  // Stable tutorial sequence, independent of edit/publish dates. Unlisted new
+  // articles retain Kickstart's order after the curated sequence in each topic.
+  const tutorialOrder = ['create-your-first-bed', 'grow-in-containers', 'map-sunlight-and-set-north',
+    'plan-and-plant', 'plan-what-grows-next', 'move-and-remove-plantings', 'group-plants'];
+  const tutorialRank = item => {
+    const rank = tutorialOrder.findIndex(slug => pageKey(new URL(item.url)).endsWith('/' + slug));
+    return rank < 0 ? tutorialOrder.length : rank;
+  };
+  // Stable routes preserve categories when Kickstart previews mix cached article
+  // tags with freshly saved navigation, or a topic display name changes.
+  const topicBySlug = {
+    'create-your-first-bed': 'beds-containers', 'grow-in-containers': 'beds-containers',
+    'map-sunlight-and-set-north': 'beds-containers',
+    'plan-and-plant': 'planning-planting', 'plan-what-grows-next': 'planning-planting',
+    'move-and-remove-plantings': 'planning-planting', 'group-plants': 'planning-planting',
+    'understand-your-schedule': 'schedule-guidance', 'understand-garden-guidance': 'schedule-guidance',
+    'journal-and-history': 'journal-history', 'identify-a-photo': 'catalogs-identification',
+    'choose-varieties-and-use-catalogs': 'catalogs-identification', 'join-community': 'community',
+  };
+  const resolveTopic = (tags, url) => {
+    const tagged = topics.find(t => tags.includes(t.title));
+    if (tagged) return tagged;
+    const slug = pageKey(url).split('/').at(-1);
+    return topics.find(t => t.id === topicBySlug[slug]) || topics.at(-1);
+  };
   const readItems = doc => Array.from(doc.querySelectorAll('.blog-card')).flatMap(card => {
     const title = card.querySelector('.blog-card-title');
     if (!title) return [];
@@ -83,11 +108,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const tags = Array.from(card.querySelectorAll('.blog-tag'), tag => tag.textContent.trim());
     return [{title: title.textContent.trim(), url: url.href,
       summary: card.querySelector('.blog-card-summary')?.textContent.trim() || '', tags,
-      topic: topics.find(t => tags.includes(t.title)) || topics.at(-1), resource: resourceFor(url)}];
-  });
+      topic: resolveTopic(tags, url), resource: resourceFor(url)}];
+  }).sort((a, b) => tutorialRank(a) - tutorialRank(b));
   const topicOfPage = () => {
     const tags = Array.from(document.querySelectorAll('.blog-article-page > .blog-tag-list .blog-tag'), e => e.textContent.trim());
-    return topics.find(t => tags.includes(t.title)) || topics.at(-1);
+    return resolveTopic(tags, pageURL);
   };
   const tutorialRow = item => {
     const row = element('li');
@@ -136,15 +161,27 @@ document.addEventListener('DOMContentLoaded', () => {
       const intro = element('section', 'pw-start');
       intro.setAttribute('aria-labelledby', 'pw-start-heading');
       const introTitle = element('h2', '', 'Start here'); introTitle.id = 'pw-start-heading';
-      intro.append(introTitle, element('p', 'pw-muted', 'Create a growing space, then make your first planting plan.'));
-      const firstSteps = ['create-your-first-bed', 'plan-and-plant'];
-      const starters = tutorials.filter(item => item.tags.includes('Start here')).sort((a, b) => {
-        const rank = item => {const n = firstSteps.findIndex(slug => pageKey(new URL(item.url)).endsWith('/' + slug)); return n < 0 ? 999 : n;};
-        return rank(a) - rank(b);
+      intro.append(introTitle, element('p', 'pw-muted', 'Create a growing space, then plot and plan your first planting.'));
+      const starterPaths = [
+        {title: 'Beds', slugs: ['create-your-first-bed', 'plan-and-plant']},
+        {title: 'Containers', slugs: ['grow-in-containers', 'plan-and-plant']},
+      ];
+      const starters = [];
+      const paths = element('div', 'pw-start-paths');
+      starterPaths.forEach(path => {
+        const section = element('section', 'pw-start-path');
+        section.append(element('h3', '', path.title));
+        const steps = element('ol', 'pw-start-list');
+        path.slugs.forEach(slug => {
+          const item = tutorials.find(item => pageKey(new URL(item.url)).endsWith('/' + slug));
+          if (!item) return;
+          starters.push(item);
+          const row = element('li');
+          row.append(link(item.url, item.title, 'pw-start-link')); steps.append(row);
+        });
+        section.append(steps); paths.append(section);
       });
-      const steps = element('ol', 'pw-start-list');
-      starters.forEach(item => { const row = element('li'); row.append(link(item.url, item.title, 'pw-start-link')); steps.append(row); });
-      intro.append(steps); intro.hidden = !starters.length;
+      intro.append(paths); intro.hidden = !starters.length;
       const browse = element('section', 'pw-browse');
       const browseTitle = element('h2', '', 'Browse by topic'); browseTitle.id = 'pw-browse-heading';
       browse.setAttribute('aria-labelledby', browseTitle.id); browse.append(browseTitle);
@@ -327,7 +364,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <h1 class="blog-post-title">Keep a journal and explore history</h1>
             <div class="blog-post-meta">
               <p class="blog-post-meta-item">Nov 12, 2026</p>
-              <p class="blog-post-meta-item">3 min read</p>
+              <p class="blog-post-meta-item">4 min read</p>
             </div>
             <div class="blog-tag-list">
               <span class="blog-tag">Journal &amp; history</span>
@@ -346,11 +383,25 @@ document.addEventListener('DOMContentLoaded', () => {
               <p>A <strong>journal entry</strong> is something you write or photograph—for example, an observation, harvest note, experiment, or reminder.</p>
               <p>An <strong>activity</strong> records an action in the app, such as planting, transplanting within a bed, or removing a planting. You can add a journal note while recording some actions, so the event and your observations stay connected.</p>
               <p>Use <strong>Almanac → Journal</strong> for the garden-wide record. Open <strong>Journal</strong> inside a bed or container group for that space’s record. Entries are grouped by month.</p>
+              <figure class="pw-tutorial-figure" style="width:100%;max-width:280px;margin:1.5rem auto;"> 
+                <a href="images/screenshots/journal-01-entries-framed.png"><img src="images/screenshots/journal-01-entries-framed.png" alt="Backyard bed Journal showing a garden note and planted Garlic and Kale activities." loading="lazy" style="display:block;width:100%;height:auto;" /></a> 
+                <figcaption>
+                  <strong>Bed:</strong> Notes and planting activity appear together, organized by month.
+                </figcaption> 
+              </figure> 
               <h2>Add a useful entry</h2>
-              <p>Use <strong>Add journal entry</strong> from the relevant growing space or planting. Check the plant or growing space, then add your note, photos, and optional tags.</p>
+              <p><strong>In a bed:</strong> use <strong>Add journal entry</strong> with a planting selected to write about it, or with no planting selected to write about the bed.</p>
+              <p><strong>In a container group:</strong> select the container, then its planting before using <strong>Add journal entry</strong> to write about that plant. Return to the group’s Guide to write about the group.</p>
+              <p>Check the plant or growing space, then add your note, photos, and optional tags.</p>
               <p>You can choose photos from your library, take a photo, or add an image from Files. Tap a thumbnail to view it and optionally use garden photo identification to explore what it shows.</p>
               <!-- ICON: Add journal entry — insert the app's actual journal control beside its name. --> 
-              <!-- MEDIA: journal-entry-subject — Show a qualified plant name, location, note, photo, references, and tags in one saved entry. --> 
+              <figure class="pw-tutorial-figure" style="width:100%;max-width:280px;margin:1.5rem auto;"> 
+                <a href="images/screenshots/journal-03-new-entry-framed.png"><img src="images/screenshots/journal-03-new-entry-framed.png" alt="A new bed journal entry with a note, date, photo control and tags." loading="lazy" style="display:block;width:100%;height:auto;" /></a> 
+                <figcaption>
+                  <strong>Bed:</strong> Save a note about your garden and add photos or tags.
+                </figcaption> 
+              </figure> 
+              <!-- MEDIA: journal-entry-container — Container group: show the corresponding entry with its container name and space number. Use a detail crop if the rest of the form is identical. --> 
               <h2>Go back to the plant</h2>
               <p>Tap an activity to locate the plant. For a written journal entry, open it to read the note and use <strong>View in garden</strong> to locate the plant.</p>
               <p>If the planting is still in its recorded space, Plotwise selects it in the current layout. If it has moved or been removed, a historical view can show the recorded position instead.</p>
@@ -359,7 +410,23 @@ document.addEventListener('DOMContentLoaded', () => {
               <p>In a bed or container group’s Journal, turn on <strong>View history</strong>. As you scroll, the highlighted entry selects the historical moment shown above.</p>
               <p>Tap <strong>View history</strong> again to return to the current layout. Swipe actions are unavailable while this mode is on; turn it off before editing or removing entries.</p>
               <!-- ICON: View history — use clock.arrow.circlepath, matching the app's control; placeholder only, no web symbol font. --> 
-              <!-- MEDIA: journal-history — Show the highlighted event and its matching bed layout, followed by returning to the current layout. --> 
+              <figure class="pw-tutorial-figure" style="width:100%;max-width:280px;margin:1.5rem auto;"> 
+                <a href="images/screenshots/journal-02-history-framed.png"><img src="images/screenshots/journal-02-history-framed.png" alt="View history enabled with a highlighted journal entry and the bed layout for its date." loading="lazy" style="display:block;width:100%;height:auto;" /></a> 
+                <figcaption>
+                  <strong>Bed:</strong> Turn on View history to follow the garden through its recorded events.
+                </figcaption> 
+              </figure> 
+              <figure class="pw-tutorial-video" style="width:100%;max-width:280px;margin:1.5rem auto;"> 
+                <video controls playsinline preload="none" poster="https://nastynate13.github.io/plotwise-garden-media/tutorials/journal-and-history/v3/history-scroll-v3-poster.png" aria-label="Scroll from a November journal entry to the September Kale planting, changing the bed layout." style="display:block;width:100%;height:auto;border-radius:1rem;"> 
+                  <source src="https://nastynate13.github.io/plotwise-garden-media/tutorials/journal-and-history/v3/history-scroll-v3.mp4" type="video/mp4" /> 
+                  <a href="https://nastynate13.github.io/plotwise-garden-media/tutorials/journal-and-history/v3/history-scroll-v3.mp4">Watch the demonstration</a> 
+                </video> 
+                <figcaption>
+                  Scroll through the journal to see the garden at an earlier event. 
+                  <a href="https://nastynate13.github.io/plotwise-garden-media/tutorials/journal-and-history/v3/history-scroll-v3.mp4">Open video</a>.
+                </figcaption> 
+              </figure> 
+              <!-- MEDIA: journal-history-container — Container group: show the highlighted event and matching historical containers. Keep the View history control visible. --> 
               <h2>Remove a note or hide an activity</h2>
               <p>Swipe a written entry to <strong>Edit</strong> or <strong>Remove</strong> it. Removing the entry removes its note and attached photos from your journal.</p>
               <p>For an automatic activity, <strong>Hide</strong> permanently hides that row from the journal. It does not undo the activity.</p>

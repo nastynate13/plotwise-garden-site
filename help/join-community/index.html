@@ -5,15 +5,15 @@
     <meta property="og:site_name" content="Plotwise Garden" />
     <meta property="og:title" content="Join Community" />
     <meta name="twitter:title" content="Join Community" />
-    <meta property="og:description" content="Ask a gardening question, share an observation, or help someone else make sense of what is happening in their garden." />
-    <meta name="twitter:description" content="Ask a gardening question, share an observation, or help someone else make sense of what is happening in their garden." />
+    <meta property="og:description" content="Share a garden accomplishment, ask a question, or help another gardener. Community is a place to show what you’re growing and learn from one another." />
+    <meta name="twitter:description" content="Share a garden accomplishment, ask a question, or help another gardener. Community is a place to show what you’re growing and learn from one another." />
     <meta property="og:url" content="https://plotwisegarden.com/help/join-community" />
     <meta name="twitter:domain" content="plotwisegarden.com" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:dnt" content="on" />
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Ask a gardening question, share an observation, or help someone else make sense of what is happening in their garden." />
+    <meta name="description" content="Share a garden accomplishment, ask a question, or help another gardener. Community is a place to show what you’re growing and learn from one another." />
     <meta name="generator" content="Ignite v0.6.9" />
     <title>Join Community - Plotwise Garden</title>
     <link href="css/bootstrap.min.css" rel="stylesheet" />
@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const normalize = text => text.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   const topics = [
     {id: 'beds-containers', title: 'Beds & containers', description: 'Set up your growing spaces and make room for your plants.'},
-    {id: 'planning-planting', title: 'Planning & planting', description: 'Choose planting dates, manage groups, and plan what comes next.'},
+    {id: 'planning-planting', title: 'Plotting, Planning, and Planting', description: 'Plot your space, plan planting dates, and grow through the season.'},
     {id: 'schedule-guidance', title: 'Schedule & guidance', description: 'Read your schedule and understand your garden’s guidance.'},
     {id: 'journal-history', title: 'Journal & history', description: 'Record what happens and revisit your garden over time.'},
     {id: 'catalogs-identification', title: 'Catalogs & photo identification', description: 'Explore plants and guides, and investigate what you’ve spotted.'},
@@ -76,6 +76,31 @@ document.addEventListener('DOMContentLoaded', () => {
     return node;
   };
   const topicPath = topic => `help/index.html?topic=${encodeURIComponent(topic.id)}`;
+  // Stable tutorial sequence, independent of edit/publish dates. Unlisted new
+  // articles retain Kickstart's order after the curated sequence in each topic.
+  const tutorialOrder = ['create-your-first-bed', 'grow-in-containers', 'map-sunlight-and-set-north',
+    'plan-and-plant', 'plan-what-grows-next', 'move-and-remove-plantings', 'group-plants'];
+  const tutorialRank = item => {
+    const rank = tutorialOrder.findIndex(slug => pageKey(new URL(item.url)).endsWith('/' + slug));
+    return rank < 0 ? tutorialOrder.length : rank;
+  };
+  // Stable routes preserve categories when Kickstart previews mix cached article
+  // tags with freshly saved navigation, or a topic display name changes.
+  const topicBySlug = {
+    'create-your-first-bed': 'beds-containers', 'grow-in-containers': 'beds-containers',
+    'map-sunlight-and-set-north': 'beds-containers',
+    'plan-and-plant': 'planning-planting', 'plan-what-grows-next': 'planning-planting',
+    'move-and-remove-plantings': 'planning-planting', 'group-plants': 'planning-planting',
+    'understand-your-schedule': 'schedule-guidance', 'understand-garden-guidance': 'schedule-guidance',
+    'journal-and-history': 'journal-history', 'identify-a-photo': 'catalogs-identification',
+    'choose-varieties-and-use-catalogs': 'catalogs-identification', 'join-community': 'community',
+  };
+  const resolveTopic = (tags, url) => {
+    const tagged = topics.find(t => tags.includes(t.title));
+    if (tagged) return tagged;
+    const slug = pageKey(url).split('/').at(-1);
+    return topics.find(t => t.id === topicBySlug[slug]) || topics.at(-1);
+  };
   const readItems = doc => Array.from(doc.querySelectorAll('.blog-card')).flatMap(card => {
     const title = card.querySelector('.blog-card-title');
     if (!title) return [];
@@ -83,11 +108,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const tags = Array.from(card.querySelectorAll('.blog-tag'), tag => tag.textContent.trim());
     return [{title: title.textContent.trim(), url: url.href,
       summary: card.querySelector('.blog-card-summary')?.textContent.trim() || '', tags,
-      topic: topics.find(t => tags.includes(t.title)) || topics.at(-1), resource: resourceFor(url)}];
-  });
+      topic: resolveTopic(tags, url), resource: resourceFor(url)}];
+  }).sort((a, b) => tutorialRank(a) - tutorialRank(b));
   const topicOfPage = () => {
     const tags = Array.from(document.querySelectorAll('.blog-article-page > .blog-tag-list .blog-tag'), e => e.textContent.trim());
-    return topics.find(t => tags.includes(t.title)) || topics.at(-1);
+    return resolveTopic(tags, pageURL);
   };
   const tutorialRow = item => {
     const row = element('li');
@@ -136,15 +161,27 @@ document.addEventListener('DOMContentLoaded', () => {
       const intro = element('section', 'pw-start');
       intro.setAttribute('aria-labelledby', 'pw-start-heading');
       const introTitle = element('h2', '', 'Start here'); introTitle.id = 'pw-start-heading';
-      intro.append(introTitle, element('p', 'pw-muted', 'Create a growing space, then make your first planting plan.'));
-      const firstSteps = ['create-your-first-bed', 'plan-and-plant'];
-      const starters = tutorials.filter(item => item.tags.includes('Start here')).sort((a, b) => {
-        const rank = item => {const n = firstSteps.findIndex(slug => pageKey(new URL(item.url)).endsWith('/' + slug)); return n < 0 ? 999 : n;};
-        return rank(a) - rank(b);
+      intro.append(introTitle, element('p', 'pw-muted', 'Create a growing space, then plot and plan your first planting.'));
+      const starterPaths = [
+        {title: 'Beds', slugs: ['create-your-first-bed', 'plan-and-plant']},
+        {title: 'Containers', slugs: ['grow-in-containers', 'plan-and-plant']},
+      ];
+      const starters = [];
+      const paths = element('div', 'pw-start-paths');
+      starterPaths.forEach(path => {
+        const section = element('section', 'pw-start-path');
+        section.append(element('h3', '', path.title));
+        const steps = element('ol', 'pw-start-list');
+        path.slugs.forEach(slug => {
+          const item = tutorials.find(item => pageKey(new URL(item.url)).endsWith('/' + slug));
+          if (!item) return;
+          starters.push(item);
+          const row = element('li');
+          row.append(link(item.url, item.title, 'pw-start-link')); steps.append(row);
+        });
+        section.append(steps); paths.append(section);
       });
-      const steps = element('ol', 'pw-start-list');
-      starters.forEach(item => { const row = element('li'); row.append(link(item.url, item.title, 'pw-start-link')); steps.append(row); });
-      intro.append(steps); intro.hidden = !starters.length;
+      intro.append(paths); intro.hidden = !starters.length;
       const browse = element('section', 'pw-browse');
       const browseTitle = element('h2', '', 'Browse by topic'); browseTitle.id = 'pw-browse-heading';
       browse.setAttribute('aria-labelledby', browseTitle.id); browse.append(browseTitle);
@@ -327,7 +364,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <h1 class="blog-post-title">Join Community</h1>
             <div class="blog-post-meta">
               <p class="blog-post-meta-item">Nov 12, 2026</p>
-              <p class="blog-post-meta-item">3 min read</p>
+              <p class="blog-post-meta-item">4 min read</p>
             </div>
             <div class="blog-tag-list">
               <span class="blog-tag">Community</span>
@@ -342,25 +379,38 @@ document.addEventListener('DOMContentLoaded', () => {
               <span class="blog-tag">Search</span>
             </div>
             <div class="blog-article-body">
-              <p>Ask a gardening question, share an observation, or help someone else make sense of what is happening in their garden.</p>
+              <p>Share a garden accomplishment, ask a question, or help another gardener. Community is a place to show what you’re growing and learn from one another.</p>
               <h2>Browse before you post</h2>
               <p>Open <strong>Community</strong> to read discussions. Use the sort menu for <strong>Latest</strong>, <strong>Helpfulness</strong>, <strong>Most active</strong>, or <strong>Unanswered</strong>. In <strong>Search → Community</strong>, search across <strong>All</strong>, <strong>Posts</strong>, <strong>Replies</strong>, or <strong>Profiles</strong>, and browse topics to narrow your interest.</p>
               <p>Replies in search are grouped under the discussion they belong to, so you can open the conversation for context.</p>
               <!-- MEDIA: community-search — Show reply results grouped by discussion and the search scopes. Use synthetic demo content without real people's details. --> 
+              <figure class="pw-tutorial-figure" style="width:100%;max-width:280px;margin:1.5rem auto;"> 
+                <a href="images/screenshots/community-02-discussion-framed.png"><img src="images/screenshots/community-02-discussion-framed.png" alt="A sample Community discussion with replies, helpful marks and Join the conversation." loading="lazy" style="display:block;width:100%;height:auto;" /></a> 
+                <figcaption>
+                  Read replies and recognize advice you found helpful.
+                </figcaption> 
+              </figure> 
               <h2>Set up your public profile</h2>
               <p>Open the Community menu and choose <strong>Community account</strong> to sign in with Apple. Use <strong>Your profile</strong> to see your contributions and edit your display name and optional bio.</p>
               <p>Your public profile helps other gardeners understand who is contributing. Your private garden plans and journal are not automatically published with it.</p>
               <!-- ICON: Community menu — show the actual leading menu control beside its name. --> 
               <h2>Start a discussion</h2>
               <p>Use <strong>New discussion</strong> to write a clear title, choose a topic, and describe what you want to ask or share. Add relevant plants and a photo when they add useful context to your post.</p>
-              <p>Useful context might include how long the issue has been happening, what changed recently, or what you have already tried.</p>
+              <p>Celebrate your first harvest, show a bed you’ve brought to life, or share something that worked well. Tell fellow gardeners what you tried and what you’re proud of.</p>
+              <p>For a question, useful context might include how long the issue has been happening, what changed recently, or what you have already tried.</p>
               <p>Before submitting content for the first time, review the safety-check permission. Community uses automated checks on submitted text and photos. You can decline and keep browsing, or change the permission later in Settings. Turning permission off does not remove posts you already shared.</p>
               <p>Tap <strong>Post</strong> when you are ready to share publicly.</p>
               <h2>Reply with the right context</h2>
               <p>Open a discussion and choose <strong>Join the conversation</strong>, or use <strong>Reply</strong> on a particular reply. The composer identifies the discussion or gardener you are replying to.</p>
               <p>Expand the composer when you need more room, and show the full post or reply context when you want to refer to it while writing. Use the formatting control for emphasis, or add a photo where offered. Tap the send button when your reply is ready.</p>
               <!-- ICON: Send reply — use paperplane.fill as shown in the composer; use the actual formatting control beside the formatting instruction. --> 
-              <!-- MEDIA: reply-context — Pair compact and expanded reply states with the relevant parent message visible. --> 
+              <figure class="pw-tutorial-figure" style="width:100%;max-width:280px;margin:1.5rem auto;"> 
+                <a href="images/screenshots/community-03-reply-framed.png"><img src="images/screenshots/community-03-reply-framed.png" alt="A reply being composed with formatting, expand and send controls." loading="lazy" style="display:block;width:100%;height:auto;" /></a> 
+                <figcaption>
+                  Write a reply while keeping the discussion in view.
+                </figcaption> 
+              </figure> 
+              <!-- MEDIA: reply-expanded — Show the expanded composer with full parent context. --> 
               <h2>Recognize useful contributions</h2>
               <p>Use <strong>Helpful</strong> on a discussion or reply that helped you. Tap it again to remove your mark. You cannot mark your own contribution helpful.</p>
               <p>A helpful mark recognizes someone’s contribution; it is not a guarantee that gardening advice applies to every plant, location, or situation. Open a gardener’s name to explore their public discussions and replies.</p>

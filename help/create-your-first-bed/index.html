@@ -3,8 +3,8 @@
   <head>
     <base href="../../" />
     <meta property="og:site_name" content="Plotwise Garden" />
-    <meta property="og:title" content="Create your first bed" />
-    <meta name="twitter:title" content="Create your first bed" />
+    <meta property="og:title" content="Create your bed" />
+    <meta name="twitter:title" content="Create your bed" />
     <meta property="og:description" content="Create a bed that matches your growing space, choose its location, and optionally map the sunlight before adding your first plants." />
     <meta name="twitter:description" content="Create a bed that matches your growing space, choose its location, and optionally map the sunlight before adding your first plants." />
     <meta property="og:url" content="https://plotwisegarden.com/help/create-your-first-bed" />
@@ -15,7 +15,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="Create a bed that matches your growing space, choose its location, and optionally map the sunlight before adding your first plants." />
     <meta name="generator" content="Ignite v0.6.9" />
-    <title>Create your first bed - Plotwise Garden</title>
+    <title>Create your bed - Plotwise Garden</title>
     <link href="css/bootstrap.min.css" rel="stylesheet" />
     <link href="css/bootstrap-icons.min.css" rel="stylesheet" />
     <link href="css/ignite-core.min.css" rel="stylesheet" />
@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const normalize = text => text.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   const topics = [
     {id: 'beds-containers', title: 'Beds & containers', description: 'Set up your growing spaces and make room for your plants.'},
-    {id: 'planning-planting', title: 'Planning & planting', description: 'Choose planting dates, manage groups, and plan what comes next.'},
+    {id: 'planning-planting', title: 'Plotting, Planning, and Planting', description: 'Plot your space, plan planting dates, and grow through the season.'},
     {id: 'schedule-guidance', title: 'Schedule & guidance', description: 'Read your schedule and understand your garden’s guidance.'},
     {id: 'journal-history', title: 'Journal & history', description: 'Record what happens and revisit your garden over time.'},
     {id: 'catalogs-identification', title: 'Catalogs & photo identification', description: 'Explore plants and guides, and investigate what you’ve spotted.'},
@@ -76,6 +76,31 @@ document.addEventListener('DOMContentLoaded', () => {
     return node;
   };
   const topicPath = topic => `help/index.html?topic=${encodeURIComponent(topic.id)}`;
+  // Stable tutorial sequence, independent of edit/publish dates. Unlisted new
+  // articles retain Kickstart's order after the curated sequence in each topic.
+  const tutorialOrder = ['create-your-first-bed', 'grow-in-containers', 'map-sunlight-and-set-north',
+    'plan-and-plant', 'plan-what-grows-next', 'move-and-remove-plantings', 'group-plants'];
+  const tutorialRank = item => {
+    const rank = tutorialOrder.findIndex(slug => pageKey(new URL(item.url)).endsWith('/' + slug));
+    return rank < 0 ? tutorialOrder.length : rank;
+  };
+  // Stable routes preserve categories when Kickstart previews mix cached article
+  // tags with freshly saved navigation, or a topic display name changes.
+  const topicBySlug = {
+    'create-your-first-bed': 'beds-containers', 'grow-in-containers': 'beds-containers',
+    'map-sunlight-and-set-north': 'beds-containers',
+    'plan-and-plant': 'planning-planting', 'plan-what-grows-next': 'planning-planting',
+    'move-and-remove-plantings': 'planning-planting', 'group-plants': 'planning-planting',
+    'understand-your-schedule': 'schedule-guidance', 'understand-garden-guidance': 'schedule-guidance',
+    'journal-and-history': 'journal-history', 'identify-a-photo': 'catalogs-identification',
+    'choose-varieties-and-use-catalogs': 'catalogs-identification', 'join-community': 'community',
+  };
+  const resolveTopic = (tags, url) => {
+    const tagged = topics.find(t => tags.includes(t.title));
+    if (tagged) return tagged;
+    const slug = pageKey(url).split('/').at(-1);
+    return topics.find(t => t.id === topicBySlug[slug]) || topics.at(-1);
+  };
   const readItems = doc => Array.from(doc.querySelectorAll('.blog-card')).flatMap(card => {
     const title = card.querySelector('.blog-card-title');
     if (!title) return [];
@@ -83,11 +108,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const tags = Array.from(card.querySelectorAll('.blog-tag'), tag => tag.textContent.trim());
     return [{title: title.textContent.trim(), url: url.href,
       summary: card.querySelector('.blog-card-summary')?.textContent.trim() || '', tags,
-      topic: topics.find(t => tags.includes(t.title)) || topics.at(-1), resource: resourceFor(url)}];
-  });
+      topic: resolveTopic(tags, url), resource: resourceFor(url)}];
+  }).sort((a, b) => tutorialRank(a) - tutorialRank(b));
   const topicOfPage = () => {
     const tags = Array.from(document.querySelectorAll('.blog-article-page > .blog-tag-list .blog-tag'), e => e.textContent.trim());
-    return topics.find(t => tags.includes(t.title)) || topics.at(-1);
+    return resolveTopic(tags, pageURL);
   };
   const tutorialRow = item => {
     const row = element('li');
@@ -136,15 +161,27 @@ document.addEventListener('DOMContentLoaded', () => {
       const intro = element('section', 'pw-start');
       intro.setAttribute('aria-labelledby', 'pw-start-heading');
       const introTitle = element('h2', '', 'Start here'); introTitle.id = 'pw-start-heading';
-      intro.append(introTitle, element('p', 'pw-muted', 'Create a growing space, then make your first planting plan.'));
-      const firstSteps = ['create-your-first-bed', 'plan-and-plant'];
-      const starters = tutorials.filter(item => item.tags.includes('Start here')).sort((a, b) => {
-        const rank = item => {const n = firstSteps.findIndex(slug => pageKey(new URL(item.url)).endsWith('/' + slug)); return n < 0 ? 999 : n;};
-        return rank(a) - rank(b);
+      intro.append(introTitle, element('p', 'pw-muted', 'Create a growing space, then plot and plan your first planting.'));
+      const starterPaths = [
+        {title: 'Beds', slugs: ['create-your-first-bed', 'plan-and-plant']},
+        {title: 'Containers', slugs: ['grow-in-containers', 'plan-and-plant']},
+      ];
+      const starters = [];
+      const paths = element('div', 'pw-start-paths');
+      starterPaths.forEach(path => {
+        const section = element('section', 'pw-start-path');
+        section.append(element('h3', '', path.title));
+        const steps = element('ol', 'pw-start-list');
+        path.slugs.forEach(slug => {
+          const item = tutorials.find(item => pageKey(new URL(item.url)).endsWith('/' + slug));
+          if (!item) return;
+          starters.push(item);
+          const row = element('li');
+          row.append(link(item.url, item.title, 'pw-start-link')); steps.append(row);
+        });
+        section.append(steps); paths.append(section);
       });
-      const steps = element('ol', 'pw-start-list');
-      starters.forEach(item => { const row = element('li'); row.append(link(item.url, item.title, 'pw-start-link')); steps.append(row); });
-      intro.append(steps); intro.hidden = !starters.length;
+      intro.append(paths); intro.hidden = !starters.length;
       const browse = element('section', 'pw-browse');
       const browseTitle = element('h2', '', 'Browse by topic'); browseTitle.id = 'pw-browse-heading';
       browse.setAttribute('aria-labelledby', browseTitle.id); browse.append(browseTitle);
@@ -324,10 +361,10 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="blog-post-page">
           <div class="container blog-article-page">
             <a href="help/" class="blog-back-link">Back to Blog</a>
-            <h1 class="blog-post-title">Create your first bed</h1>
+            <h1 class="blog-post-title">Create your bed</h1>
             <div class="blog-post-meta">
               <p class="blog-post-meta-item">Nov 12, 2026</p>
-              <p class="blog-post-meta-item">4 min read</p>
+              <p class="blog-post-meta-item">3 min read</p>
             </div>
             <div class="blog-tag-list">
               <span class="blog-tag">Beds &amp; containers</span>
@@ -344,7 +381,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <h2>2. Choose where you’re growing</h2>
               <p>Use your current location, or search for the location of your garden. <strong>Tap a search result to select it</strong> before continuing. Typing a place name alone does not select it.</p>
               <p>You can also give the location a familiar name, such as Home or Community Garden. Plotwise uses the location for climate and weather guidance.</p>
-              <figure class="pw-tutorial-figure" style="max-width:280px;margin:1.5rem auto;"> 
+              <figure class="pw-tutorial-figure" style="width:100%;max-width:280px;margin:1.5rem auto;"> 
                 <a href="images/screenshots/create-bed-01-location-framed.png"><img src="images/screenshots/create-bed-01-location-framed.png" alt="New York selected as the location for Home in Garden Setup." loading="lazy" style="display:block;width:100%;height:auto;" /></a> 
                 <figcaption>
                   Choose a location from the results before continuing.
@@ -353,27 +390,14 @@ document.addEventListener('DOMContentLoaded', () => {
               <h2>3. Name and size your bed</h2>
               <p>Enter a name you’ll recognize, such as Backyard bed. Choose a listed size or use <strong>Custom size</strong> to set the width and length in feet.</p>
               <p>Each square represents one square foot. A 4 × 8-foot bed has 32 squares. Check the dimensions before creating the bed; they define the space you’ll plan within.</p>
-              <figure class="pw-tutorial-figure" style="max-width:280px;margin:1.5rem auto;"> 
+              <figure class="pw-tutorial-figure" style="width:100%;max-width:280px;margin:1.5rem auto;"> 
                 <a href="images/screenshots/create-bed-02-size-framed.png"><img src="images/screenshots/create-bed-02-size-framed.png" alt="Backyard bed named and the 4 by 8 foot size selected." loading="lazy" style="display:block;width:100%;height:auto;" /></a> 
                 <figcaption>
                   Name the bed and choose dimensions that match your growing space.
                 </figcaption> 
               </figure> 
-              <h2>4. Map the sunlight</h2>
-              <p>Choose whether to open the Sun Map next, then tap <strong>Create Bed</strong>.</p>
-              <p>Every square starts as full sun. In the sun editor, choose a light level and mark the areas that receive less direct sunlight:</p>
-              <ul>
-                <li><strong>Full sun:</strong> 6 or more hours of direct light.</li>
-                <li><strong>Part sun:</strong> roughly 3 to 6 hours.</li>
-                <li><strong>Shade:</strong> less than 3 hours.</li>
-              </ul>
-              <p>Use what you observe in the real bed. You can skip this step and return to it later; the full-sun default is a starting point.</p>
-              <figure class="pw-tutorial-figure" style="max-width:280px;margin:1.5rem auto;"> 
-                <a href="images/screenshots/create-bed-03-sun-map-framed.png"><img src="images/screenshots/create-bed-03-sun-map-framed.png" alt="The top row of Backyard bed marked as part sun in the Sun Map." loading="lazy" style="display:block;width:100%;height:auto;" /></a> 
-                <figcaption>
-                  Mark the areas that receive less direct sunlight. You can adjust this later.
-                </figcaption> 
-              </figure> 
+              <h2>4. Create your bed</h2>
+              <p>Choose whether to open the Sun Map next, then tap <strong>Create Bed</strong>. You can map the light now or return later. Follow <a href="help/map-sunlight-and-set-north/index.html">Sun Map</a> to record sunlight and set north with the compass.</p>
               <h2>5. Add your first plants</h2>
               <p>Open the bed and tap the <strong>plus (+)</strong> button to browse plants. Choose a plant, add it to the grid, and tap the <strong>checkmark (✓)</strong> when you’re done plotting it.</p>
               <p>Plants that need one square can be added by tapping squares. For plants with a larger minimum footprint, long press and drag across enough squares. The plant catalog shows how much space each plant needs.</p>
@@ -387,9 +411,9 @@ document.addEventListener('DOMContentLoaded', () => {
               <p>Choose one of the results below the search field so Plotwise has a selected location.</p>
               <h2>Related tutorials</h2>
               <ul>
-                <li><a href="help/plan-and-plant/index.html">Plan a planting and mark it as planted</a></li>
-                <li><a href="help/grow-in-containers/index.html">Grow in containers</a></li>
-                <li><a href="help/map-sunlight-and-set-north/index.html">Map sunlight and set north</a></li>
+                <li><a href="help/plan-and-plant/index.html">Plot, Plan, and Plant</a></li>
+                <li><a href="help/grow-in-containers/index.html">Create your container group</a></li>
+                <li><a href="help/map-sunlight-and-set-north/index.html">Sun Map</a></li>
               </ul>
               <p><a href="help/index.html">All help &amp; tutorials</a> · <a href="help/support/index.html">Contact support</a></p>
             </div>

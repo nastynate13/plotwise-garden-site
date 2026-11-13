@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const normalize = text => text.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   const topics = [
     {id: 'beds-containers', title: 'Beds & containers', description: 'Set up your growing spaces and make room for your plants.'},
-    {id: 'planning-planting', title: 'Planning & planting', description: 'Choose planting dates, manage groups, and plan what comes next.'},
+    {id: 'planning-planting', title: 'Plotting, Planning, and Planting', description: 'Plot your space, plan planting dates, and grow through the season.'},
     {id: 'schedule-guidance', title: 'Schedule & guidance', description: 'Read your schedule and understand your garden’s guidance.'},
     {id: 'journal-history', title: 'Journal & history', description: 'Record what happens and revisit your garden over time.'},
     {id: 'catalogs-identification', title: 'Catalogs & photo identification', description: 'Explore plants and guides, and investigate what you’ve spotted.'},
@@ -76,6 +76,31 @@ document.addEventListener('DOMContentLoaded', () => {
     return node;
   };
   const topicPath = topic => `help/index.html?topic=${encodeURIComponent(topic.id)}`;
+  // Stable tutorial sequence, independent of edit/publish dates. Unlisted new
+  // articles retain Kickstart's order after the curated sequence in each topic.
+  const tutorialOrder = ['create-your-first-bed', 'grow-in-containers', 'map-sunlight-and-set-north',
+    'plan-and-plant', 'plan-what-grows-next', 'move-and-remove-plantings', 'group-plants'];
+  const tutorialRank = item => {
+    const rank = tutorialOrder.findIndex(slug => pageKey(new URL(item.url)).endsWith('/' + slug));
+    return rank < 0 ? tutorialOrder.length : rank;
+  };
+  // Stable routes preserve categories when Kickstart previews mix cached article
+  // tags with freshly saved navigation, or a topic display name changes.
+  const topicBySlug = {
+    'create-your-first-bed': 'beds-containers', 'grow-in-containers': 'beds-containers',
+    'map-sunlight-and-set-north': 'beds-containers',
+    'plan-and-plant': 'planning-planting', 'plan-what-grows-next': 'planning-planting',
+    'move-and-remove-plantings': 'planning-planting', 'group-plants': 'planning-planting',
+    'understand-your-schedule': 'schedule-guidance', 'understand-garden-guidance': 'schedule-guidance',
+    'journal-and-history': 'journal-history', 'identify-a-photo': 'catalogs-identification',
+    'choose-varieties-and-use-catalogs': 'catalogs-identification', 'join-community': 'community',
+  };
+  const resolveTopic = (tags, url) => {
+    const tagged = topics.find(t => tags.includes(t.title));
+    if (tagged) return tagged;
+    const slug = pageKey(url).split('/').at(-1);
+    return topics.find(t => t.id === topicBySlug[slug]) || topics.at(-1);
+  };
   const readItems = doc => Array.from(doc.querySelectorAll('.blog-card')).flatMap(card => {
     const title = card.querySelector('.blog-card-title');
     if (!title) return [];
@@ -83,11 +108,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const tags = Array.from(card.querySelectorAll('.blog-tag'), tag => tag.textContent.trim());
     return [{title: title.textContent.trim(), url: url.href,
       summary: card.querySelector('.blog-card-summary')?.textContent.trim() || '', tags,
-      topic: topics.find(t => tags.includes(t.title)) || topics.at(-1), resource: resourceFor(url)}];
-  });
+      topic: resolveTopic(tags, url), resource: resourceFor(url)}];
+  }).sort((a, b) => tutorialRank(a) - tutorialRank(b));
   const topicOfPage = () => {
     const tags = Array.from(document.querySelectorAll('.blog-article-page > .blog-tag-list .blog-tag'), e => e.textContent.trim());
-    return topics.find(t => tags.includes(t.title)) || topics.at(-1);
+    return resolveTopic(tags, pageURL);
   };
   const tutorialRow = item => {
     const row = element('li');
@@ -136,15 +161,27 @@ document.addEventListener('DOMContentLoaded', () => {
       const intro = element('section', 'pw-start');
       intro.setAttribute('aria-labelledby', 'pw-start-heading');
       const introTitle = element('h2', '', 'Start here'); introTitle.id = 'pw-start-heading';
-      intro.append(introTitle, element('p', 'pw-muted', 'Create a growing space, then make your first planting plan.'));
-      const firstSteps = ['create-your-first-bed', 'plan-and-plant'];
-      const starters = tutorials.filter(item => item.tags.includes('Start here')).sort((a, b) => {
-        const rank = item => {const n = firstSteps.findIndex(slug => pageKey(new URL(item.url)).endsWith('/' + slug)); return n < 0 ? 999 : n;};
-        return rank(a) - rank(b);
+      intro.append(introTitle, element('p', 'pw-muted', 'Create a growing space, then plot and plan your first planting.'));
+      const starterPaths = [
+        {title: 'Beds', slugs: ['create-your-first-bed', 'plan-and-plant']},
+        {title: 'Containers', slugs: ['grow-in-containers', 'plan-and-plant']},
+      ];
+      const starters = [];
+      const paths = element('div', 'pw-start-paths');
+      starterPaths.forEach(path => {
+        const section = element('section', 'pw-start-path');
+        section.append(element('h3', '', path.title));
+        const steps = element('ol', 'pw-start-list');
+        path.slugs.forEach(slug => {
+          const item = tutorials.find(item => pageKey(new URL(item.url)).endsWith('/' + slug));
+          if (!item) return;
+          starters.push(item);
+          const row = element('li');
+          row.append(link(item.url, item.title, 'pw-start-link')); steps.append(row);
+        });
+        section.append(steps); paths.append(section);
       });
-      const steps = element('ol', 'pw-start-list');
-      starters.forEach(item => { const row = element('li'); row.append(link(item.url, item.title, 'pw-start-link')); steps.append(row); });
-      intro.append(steps); intro.hidden = !starters.length;
+      intro.append(paths); intro.hidden = !starters.length;
       const browse = element('section', 'pw-browse');
       const browseTitle = element('h2', '', 'Browse by topic'); browseTitle.id = 'pw-browse-heading';
       browse.setAttribute('aria-labelledby', browseTitle.id); browse.append(browseTitle);
@@ -330,7 +367,9 @@ document.addEventListener('DOMContentLoaded', () => {
               <p class="blog-post-meta-item">4 min read</p>
             </div>
             <div class="blog-tag-list">
-              <span class="blog-tag">Planning &amp; planting</span>
+              <span class="blog-tag">Plotting</span>
+              <span class="blog-tag">Planning</span>
+              <span class="blog-tag">and Planting</span>
               <span class="blog-tag">Grouping</span>
               <span class="blog-tag">Separate plants</span>
               <span class="blog-tag">Succession</span>
@@ -349,14 +388,14 @@ document.addEventListener('DOMContentLoaded', () => {
               <p>Plot the same plant and variety in the squares you want included. Grouped areas <strong>do not have to touch</strong>. For example, you can group flowers along different edges of a bed.</p>
               <p>Each plant still needs its minimum size and shape. A plant that requires a 2 × 2 block needs complete blocks; four scattered squares are not equivalent.</p>
               <p>Tap the <strong>checkmark (✓)</strong> to finish. The new group is now a single <strong>Plotted</strong> planting.</p>
-              <figure class="pw-tutorial-video" style="max-width:280px;margin:1.5rem auto;"> 
-                <video controls playsinline preload="none" width="588" height="1280" poster="https://nastynate13.github.io/plotwise-garden-media/tutorials/group-plants/v2/group-plants-poster.png" aria-label="Group four garlic squares as one planting" style="display:block;width:100%;height:auto;border-radius:1rem;"> 
-                  <source src="https://nastynate13.github.io/plotwise-garden-media/tutorials/group-plants/v2/group-plants.mp4" type="video/mp4" /> 
-                  <a href="https://nastynate13.github.io/plotwise-garden-media/tutorials/group-plants/v2/group-plants.mp4">Watch the demonstration</a> 
+              <figure class="pw-tutorial-video" style="width:100%;max-width:280px;margin:1.5rem auto;"> 
+                <video controls playsinline preload="none" poster="https://nastynate13.github.io/plotwise-garden-media/tutorials/group-plants/v3/group-plants-v3-poster.png" aria-label="Turn on Group plants, plot two pairs of garlic squares, and finish the planting." style="display:block;width:100%;height:auto;border-radius:1rem;"> 
+                  <source src="https://nastynate13.github.io/plotwise-garden-media/tutorials/group-plants/v3/group-plants-v3.mp4" type="video/mp4" /> 
+                  <a href="https://nastynate13.github.io/plotwise-garden-media/tutorials/group-plants/v3/group-plants-v3.mp4">Watch the demonstration</a> 
                 </video> 
                 <figcaption>
-                  Turn on Group plants, add your squares, then tap the checkmark to save them as one planting. 
-                  <a href="https://nastynate13.github.io/plotwise-garden-media/tutorials/group-plants/v2/group-plants.mp4">Open video</a>.
+                  Plot several squares as one planting. 
+                  <a href="https://nastynate13.github.io/plotwise-garden-media/tutorials/group-plants/v3/group-plants-v3.mp4">Open video</a>.
                 </figcaption> 
               </figure> 
               <h2>3. Plan and plant the group</h2>
@@ -373,14 +412,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 <li>Tap the <strong>checkmark (✓)</strong> to save, or <strong>X</strong> to cancel.</li>
               </ol>
               <p>Your selected squares become one new planting. They keep the current plan, which you can then change independently.</p>
-              <figure class="pw-tutorial-video" style="max-width:280px;margin:1.5rem auto;"> 
-                <video controls playsinline preload="none" width="588" height="1280" poster="https://nastynate13.github.io/plotwise-garden-media/tutorials/group-plants/v2/separate-plants-poster.png" aria-label="Separate two garlic squares into their own planting" style="display:block;width:100%;height:auto;border-radius:1rem;"> 
-                  <source src="https://nastynate13.github.io/plotwise-garden-media/tutorials/group-plants/v2/separate-plants.mp4" type="video/mp4" /> 
-                  <a href="https://nastynate13.github.io/plotwise-garden-media/tutorials/group-plants/v2/separate-plants.mp4">Watch the demonstration</a> 
+              <figure class="pw-tutorial-video" style="width:100%;max-width:280px;margin:1.5rem auto;"> 
+                <video controls playsinline preload="none" poster="https://nastynate13.github.io/plotwise-garden-media/tutorials/group-plants/v3/separate-plants-v3-poster.png" aria-label="Select two squares, confirm the split, and select each planting independently." style="display:block;width:100%;height:auto;border-radius:1rem;"> 
+                  <source src="https://nastynate13.github.io/plotwise-garden-media/tutorials/group-plants/v3/separate-plants-v3.mp4" type="video/mp4" /> 
+                  <a href="https://nastynate13.github.io/plotwise-garden-media/tutorials/group-plants/v3/separate-plants-v3.mp4">Watch the demonstration</a> 
                 </video> 
                 <figcaption>
-                  Select two squares and save. Each pair can then be managed independently. 
-                  <a href="https://nastynate13.github.io/plotwise-garden-media/tutorials/group-plants/v2/separate-plants.mp4">Open video</a>.
+                  Separate selected squares to manage them independently. 
+                  <a href="https://nastynate13.github.io/plotwise-garden-media/tutorials/group-plants/v3/separate-plants-v3.mp4">Open video</a>.
                 </figcaption> 
               </figure> 
               <h2>Common questions</h2>
@@ -392,8 +431,8 @@ document.addEventListener('DOMContentLoaded', () => {
               <p>This grouping control is for bed squares. Container plantings are managed through their available container spaces.</p>
               <h2>Related tutorials</h2>
               <ul>
-                <li><a href="help/plan-and-plant/index.html">Plan a planting and mark it as planted</a></li>
-                <li><a href="help/create-your-first-bed/index.html">Create your first bed</a></li>
+                <li><a href="help/plan-and-plant/index.html">Plot, Plan, and Plant</a></li>
+                <li><a href="help/create-your-first-bed/index.html">Create your bed</a></li>
                 <li><a href="help/plan-what-grows-next/index.html">Plan what grows next</a></li>
                 <li><a href="help/move-and-remove-plantings/index.html">Move and remove plantings</a></li>
               </ul>

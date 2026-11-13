@@ -3,8 +3,8 @@
   <head>
     <base href="../../" />
     <meta property="og:site_name" content="Plotwise Garden" />
-    <meta property="og:title" content="Grow in containers" />
-    <meta name="twitter:title" content="Grow in containers" />
+    <meta property="og:title" content="Create your container group" />
+    <meta name="twitter:title" content="Create your container group" />
     <meta property="og:description" content="Organize your pots, grow bags, and planters in a container group." />
     <meta name="twitter:description" content="Organize your pots, grow bags, and planters in a container group." />
     <meta property="og:url" content="https://plotwisegarden.com/help/grow-in-containers" />
@@ -15,7 +15,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="Organize your pots, grow bags, and planters in a container group." />
     <meta name="generator" content="Ignite v0.6.9" />
-    <title>Grow in containers - Plotwise Garden</title>
+    <title>Create your container group - Plotwise Garden</title>
     <link href="css/bootstrap.min.css" rel="stylesheet" />
     <link href="css/bootstrap-icons.min.css" rel="stylesheet" />
     <link href="css/ignite-core.min.css" rel="stylesheet" />
@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const normalize = text => text.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   const topics = [
     {id: 'beds-containers', title: 'Beds & containers', description: 'Set up your growing spaces and make room for your plants.'},
-    {id: 'planning-planting', title: 'Planning & planting', description: 'Choose planting dates, manage groups, and plan what comes next.'},
+    {id: 'planning-planting', title: 'Plotting, Planning, and Planting', description: 'Plot your space, plan planting dates, and grow through the season.'},
     {id: 'schedule-guidance', title: 'Schedule & guidance', description: 'Read your schedule and understand your garden’s guidance.'},
     {id: 'journal-history', title: 'Journal & history', description: 'Record what happens and revisit your garden over time.'},
     {id: 'catalogs-identification', title: 'Catalogs & photo identification', description: 'Explore plants and guides, and investigate what you’ve spotted.'},
@@ -76,6 +76,31 @@ document.addEventListener('DOMContentLoaded', () => {
     return node;
   };
   const topicPath = topic => `help/index.html?topic=${encodeURIComponent(topic.id)}`;
+  // Stable tutorial sequence, independent of edit/publish dates. Unlisted new
+  // articles retain Kickstart's order after the curated sequence in each topic.
+  const tutorialOrder = ['create-your-first-bed', 'grow-in-containers', 'map-sunlight-and-set-north',
+    'plan-and-plant', 'plan-what-grows-next', 'move-and-remove-plantings', 'group-plants'];
+  const tutorialRank = item => {
+    const rank = tutorialOrder.findIndex(slug => pageKey(new URL(item.url)).endsWith('/' + slug));
+    return rank < 0 ? tutorialOrder.length : rank;
+  };
+  // Stable routes preserve categories when Kickstart previews mix cached article
+  // tags with freshly saved navigation, or a topic display name changes.
+  const topicBySlug = {
+    'create-your-first-bed': 'beds-containers', 'grow-in-containers': 'beds-containers',
+    'map-sunlight-and-set-north': 'beds-containers',
+    'plan-and-plant': 'planning-planting', 'plan-what-grows-next': 'planning-planting',
+    'move-and-remove-plantings': 'planning-planting', 'group-plants': 'planning-planting',
+    'understand-your-schedule': 'schedule-guidance', 'understand-garden-guidance': 'schedule-guidance',
+    'journal-and-history': 'journal-history', 'identify-a-photo': 'catalogs-identification',
+    'choose-varieties-and-use-catalogs': 'catalogs-identification', 'join-community': 'community',
+  };
+  const resolveTopic = (tags, url) => {
+    const tagged = topics.find(t => tags.includes(t.title));
+    if (tagged) return tagged;
+    const slug = pageKey(url).split('/').at(-1);
+    return topics.find(t => t.id === topicBySlug[slug]) || topics.at(-1);
+  };
   const readItems = doc => Array.from(doc.querySelectorAll('.blog-card')).flatMap(card => {
     const title = card.querySelector('.blog-card-title');
     if (!title) return [];
@@ -83,11 +108,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const tags = Array.from(card.querySelectorAll('.blog-tag'), tag => tag.textContent.trim());
     return [{title: title.textContent.trim(), url: url.href,
       summary: card.querySelector('.blog-card-summary')?.textContent.trim() || '', tags,
-      topic: topics.find(t => tags.includes(t.title)) || topics.at(-1), resource: resourceFor(url)}];
-  });
+      topic: resolveTopic(tags, url), resource: resourceFor(url)}];
+  }).sort((a, b) => tutorialRank(a) - tutorialRank(b));
   const topicOfPage = () => {
     const tags = Array.from(document.querySelectorAll('.blog-article-page > .blog-tag-list .blog-tag'), e => e.textContent.trim());
-    return topics.find(t => tags.includes(t.title)) || topics.at(-1);
+    return resolveTopic(tags, pageURL);
   };
   const tutorialRow = item => {
     const row = element('li');
@@ -136,15 +161,27 @@ document.addEventListener('DOMContentLoaded', () => {
       const intro = element('section', 'pw-start');
       intro.setAttribute('aria-labelledby', 'pw-start-heading');
       const introTitle = element('h2', '', 'Start here'); introTitle.id = 'pw-start-heading';
-      intro.append(introTitle, element('p', 'pw-muted', 'Create a growing space, then make your first planting plan.'));
-      const firstSteps = ['create-your-first-bed', 'plan-and-plant'];
-      const starters = tutorials.filter(item => item.tags.includes('Start here')).sort((a, b) => {
-        const rank = item => {const n = firstSteps.findIndex(slug => pageKey(new URL(item.url)).endsWith('/' + slug)); return n < 0 ? 999 : n;};
-        return rank(a) - rank(b);
+      intro.append(introTitle, element('p', 'pw-muted', 'Create a growing space, then plot and plan your first planting.'));
+      const starterPaths = [
+        {title: 'Beds', slugs: ['create-your-first-bed', 'plan-and-plant']},
+        {title: 'Containers', slugs: ['grow-in-containers', 'plan-and-plant']},
+      ];
+      const starters = [];
+      const paths = element('div', 'pw-start-paths');
+      starterPaths.forEach(path => {
+        const section = element('section', 'pw-start-path');
+        section.append(element('h3', '', path.title));
+        const steps = element('ol', 'pw-start-list');
+        path.slugs.forEach(slug => {
+          const item = tutorials.find(item => pageKey(new URL(item.url)).endsWith('/' + slug));
+          if (!item) return;
+          starters.push(item);
+          const row = element('li');
+          row.append(link(item.url, item.title, 'pw-start-link')); steps.append(row);
+        });
+        section.append(steps); paths.append(section);
       });
-      const steps = element('ol', 'pw-start-list');
-      starters.forEach(item => { const row = element('li'); row.append(link(item.url, item.title, 'pw-start-link')); steps.append(row); });
-      intro.append(steps); intro.hidden = !starters.length;
+      intro.append(paths); intro.hidden = !starters.length;
       const browse = element('section', 'pw-browse');
       const browseTitle = element('h2', '', 'Browse by topic'); browseTitle.id = 'pw-browse-heading';
       browse.setAttribute('aria-labelledby', browseTitle.id); browse.append(browseTitle);
@@ -324,7 +361,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="blog-post-page">
           <div class="container blog-article-page">
             <a href="help/" class="blog-back-link">Back to Blog</a>
-            <h1 class="blog-post-title">Grow in containers</h1>
+            <h1 class="blog-post-title">Create your container group</h1>
             <div class="blog-post-meta">
               <p class="blog-post-meta-item">Nov 12, 2026</p>
               <p class="blog-post-meta-item">3 min read</p>
@@ -352,13 +389,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 <li>Review the containers and finish setup.</li>
               </ol>
               <p>Choose a meaningful name for each container when you need to tell similar pots apart—for example, Blue pot or Long balcony planter.</p>
-              <!-- MEDIA: container-setup — Show a group with a grow bag, a pot, and a window box, including their names and sizes. --> 
+              <figure class="pw-tutorial-figure" style="width:100%;max-width:280px;margin:1.5rem auto;"> 
+                <a href="images/screenshots/container-create-01-builder-framed.png"><img src="images/screenshots/container-create-01-builder-framed.png" alt="Container group setup with its name field and container choices." loading="lazy" style="display:block;width:100%;height:auto;" /></a> 
+                <figcaption>
+                  Name the group and add your containers.
+                </figcaption> 
+              </figure> 
               <h2>What does a space mean?</h2>
               <p>A container can offer one or more planting spaces. Each space lets you add a planting to that container. Some plants need more of a container’s capacity than others.</p>
-              <p>Choose the container and an available space when adding a plant. Suitability depends on the plant and container. A small empty pot does not necessarily have enough soil volume or growing room for a large plant.</p>
+              <p>Select the container, then tap <strong>plus (+)</strong> to choose a plant for an open space. Suitability depends on the plant and container. A small empty pot does not necessarily have enough soil volume or growing room for a large plant.</p>
               <p>Where a container has several spaces, a plant’s location can include its space number. This helps distinguish plantings that share the same container.</p>
+              <figure class="pw-tutorial-figure" style="width:100%;max-width:280px;margin:1.5rem auto;"> 
+                <a href="images/screenshots/container-02-selected-framed.png"><img src="images/screenshots/container-02-selected-framed.png" alt="Terracotta pot selected in Patio pots with two open planting spaces and the Add plant control." loading="lazy" style="display:block;width:100%;height:auto;" /></a> 
+                <figcaption>
+                  Select a container, then use + to choose a plant.
+                </figcaption> 
+              </figure> 
               <h2>Plot, plan, and plant</h2>
-              <p>Choosing a space for a plant makes it <strong>Plotted</strong>. Save its method and date in <strong>Edit plan</strong> to make it <strong>Planned</strong>. Use <strong>Plant</strong> to record when it actually begins growing there.</p>
+              <p>Choosing a plant for the container makes it <strong>Plotted</strong>. Save its method and date in <strong>Edit plan</strong> to make it <strong>Planned</strong>. Use <strong>Plant</strong> to record when it actually begins growing there.</p>
+              <p>Follow <a href="help/plan-and-plant/index.html">Plot, Plan, and Plant</a> for the steps, including the instructions labeled <strong>In a container group</strong>.</p>
               <p>Use the group’s <strong>Guide</strong>, <strong>Schedule</strong>, and <strong>Journal</strong> to see its plantings together. Select a container or planting to focus on it. The Guide can take container size and sun exposure into account alongside timing and other available information.</p>
               <h2>Adjust the group as it changes</h2>
               <p>Open <strong>Edit group</strong> to change the group name, add containers, or update individual containers.</p>
@@ -370,10 +419,15 @@ document.addEventListener('DOMContentLoaded', () => {
               </ul>
               <p>Removing an occupied container also clears its plantings from the group. Adding and removing containers contributes to its recorded history.</p>
               <!-- ICON: Edit group — show the action in the group's menu rather than inventing a dedicated toolbar icon. --> 
-              <!-- MEDIA: container-edit — Show names, sun controls, and reorder behavior; a screenshot is enough unless the gesture needs explanation. --> 
+              <figure class="pw-tutorial-figure" style="width:100%;max-width:280px;margin:1.5rem auto;"> 
+                <a href="images/screenshots/container-08-edit-group-framed.png"><img src="images/screenshots/container-08-edit-group-framed.png" alt="Edit group screen with named containers, their sizes and light levels." loading="lazy" style="display:block;width:100%;height:auto;" /></a> 
+                <figcaption>
+                  Manage the containers in your group.
+                </figcaption> 
+              </figure> 
               <h2>Related tutorials</h2>
               <ul>
-                <li><a href="help/plan-and-plant/index.html">Plan a planting and mark it as planted</a></li>
+                <li><a href="help/plan-and-plant/index.html">Plot, Plan, and Plant</a></li>
                 <li><a href="help/understand-garden-guidance/index.html">Understand your garden’s guidance</a></li>
                 <li><a href="help/journal-and-history/index.html">Keep a journal and explore history</a></li>
               </ul>
